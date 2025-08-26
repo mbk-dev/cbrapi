@@ -10,10 +10,10 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = ">=3.12,<4.0.0"
-requests = "^2.32.5"
 pandas = "^2.3.2"
-suds-py3 = "^1.4.5.0"
-lxml = "^6.0.1"
+requests = "*"
+suds-py3 = "*"
+lxml = "*"
 
 [build-system]
 requires = ["poetry-core"]
