@@ -28,6 +28,8 @@ def get_ruonia_index(cbr_client,
     """
     Get RUONIA index and averages time series.
 
+    Averages: 'RUONIA_AVG_1M', 'RUONIA_AVG_3M', 'RUONIA_AVG_6M'
+
     RUONIA (Ruble Overnight Index Average) is the weighted average interest rate on interbank loans and deposits.
     It serves as an indicator of the cost of unsecured overnight borrowing.
     """
