@@ -1,10 +1,13 @@
 import re
+from datetime import datetime, date
+from typing import Optional
 
 import pandas as pd
-from datetime import datetime
 
 from cbr.cbr_settings import make_cbr_client
-import cbr.helpers as helpers
+from cbr.helpers import normalize_data, guess_date, pad_missing_periods, calculate_inverse_rate
+
+today = date.today()
 
 
 def get_currencies_list() -> pd.DataFrame:
@@ -85,9 +88,9 @@ def get_time_series(symbol: str, first_date: str, last_date: str, period: str = 
     df.set_index('CursDate', inplace=True, verify_integrity=True)
     df.sort_index(ascending=True, inplace=True)
     s = df.squeeze(axis=1)  # all outputs must be pd.Series
-    s = helpers.pad_missing_periods(s, freq='D')
+    s = pad_missing_periods(s, freq='D')
     s.index.rename('date', inplace=True)
     if period.upper() == 'M':
         s = s.resample('M').last()
-    s = helpers.calculate_inverse_rate(s) if method == "inverse" else s
+    s = calculate_inverse_rate(s) if method == "inverse" else s
     return s.rename(symbol)
