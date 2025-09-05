@@ -4,7 +4,9 @@ from typing import Optional
 import pandas as pd
 
 from cbr.cbr_settings import make_cbr_client
-from cbr.helpers import pad_missing_periods
+from cbr.helpers import normalize_data, guess_date
+
+today = date.today()
 
 
 def get_ruonia_ts(symbol: str,
@@ -17,13 +19,12 @@ def get_ruonia_ts(symbol: str,
         df = get_ruonia_index(cbr_client, first_date, last_date).loc[:, ticker]
         if symbol != 'RUONIA.INDX':
             df /= 100
-        return squeeze_df(df, period, symbol)
+        return normalize_data(df, period, symbol)
     else:
         return get_ruonia_overnight(cbr_client, first_date, last_date, period)
 
 
-def get_ruonia_index(cbr_client,
-                     first_date: Optional[str] = None,
+def get_ruonia_index(first_date: Optional[str] = None,
                      last_date: Optional[str] = None) -> pd.DataFrame:
     """
     Get RUONIA index and averages time series.
@@ -33,6 +34,7 @@ def get_ruonia_index(cbr_client,
     RUONIA (Ruble Overnight Index Average) is the weighted average interest rate on interbank loans and deposits.
     It serves as an indicator of the cost of unsecured overnight borrowing.
     """
+    cbr_client = make_cbr_client()
     data1 = guess_date(first_date, default_value='2010-01-01')
     data2 = guess_date(last_date, default_value=str(date.today()))
     ruonia_xml = cbr_client.service.RuoniaSV(data1, data2)
@@ -51,8 +53,7 @@ def get_ruonia_index(cbr_client,
     return df
 
 
-def get_ruonia_overnight(cbr_client,
-                         first_date: Optional[str] = None,
+def get_ruonia_overnight(first_date: Optional[str] = None,
                          last_date: Optional[str] = None,
                          period: str = 'D') -> pd.Series:
     """
@@ -61,6 +62,7 @@ def get_ruonia_overnight(cbr_client,
     RUONIA (Ruble Overnight Index Average) is the weighted average interest rate on interbank loans and deposits.
     It serves as an indicator of the cost of unsecured overnight borrowing.
     """
+    cbr_client = make_cbr_client()
     data1 = guess_date(first_date, default_value='2010-01-01')
     data2 = guess_date(last_date, default_value=str(date.today()))
     ruonia_xml = cbr_client.service.Ruonia(data1, data2)
@@ -75,29 +77,56 @@ def get_ruonia_overnight(cbr_client,
     df.set_index('D0', inplace=True, verify_integrity=True)
     df.sort_index(ascending=True, inplace=True)
     df /= 100
-    return squeeze_df(df, period, 'RUONIA.RATE')
-
-
-def squeeze_df(df, period, symbol):
-    s = df.squeeze()
-    s.index = s.index.astype('period[D]', copy=False)
-    s = pad_missing_periods(s)
-    s.index.rename('date', inplace=True)
-    if period.upper() == 'M':
-        s = s.resample('M').last()
-    return s.rename(symbol)
-
-
-def guess_date(input_date, default_value):
-    """
-    Create data in datetime format.
-    CBR accepts "%Y-%m-%d" format only.
-    """
-    if input_date:
-        try:
-            date = datetime.strptime(input_date, "%Y-%m-%d")
-        except ValueError:
-            date = datetime.strptime(input_date, "%Y-%m")
-    else:
-        date = datetime.strptime(default_value, "%Y-%m-%d")
-    return date
+    return normalize_data(df, period, 'RUONIA.RATE')
+    
+    
+def get_ruoniasv(first_date: Optional[str] = None,
+                last_date: Optional[str] = None,
+                 period: str = 'D') -> pd.Series:    
+                  
+    cbr_client = make_cbr_client()
+    data1 = guess_date(first_date, default_value='2010-04-15')   
+    data2 = guess_date(last_date, default_value=str(today))
+    ruoniasv_xml = cbr_client.service.RuoniaSV(data1, data2)
+    
+    try:
+        df = pd.read_xml(ruoniasv_xml, xpath=".//ra")
+    except ValueError:
+        return pd.Series()
+        
+    level_1_column_mapping = {
+        'RUONIA_Index': 'RUONIA_INDEX',
+        'R1W': 'RUONIA_AVG_1M',
+        'R2W': 'RUONIA_AVG_3M',
+        'R1M': 'RUONIA_AVG_6M'
+        }  
+                                   
+    df = normalize_data(data=df, period=period, symbol='ra', level_1=level_1_column_mapping)     
+    return df    
+    
+    
+def get_roisfix(first_date: Optional[str] = None,
+                last_date: Optional[str] = None,
+                 period: str = 'D') -> pd.Series:       
+                  
+    cbr_client = make_cbr_client()
+    data1 = guess_date(first_date, default_value='2011-04-15')   
+    data2 = guess_date(last_date, default_value=str(today))
+    roisfix_xml = cbr_client.service.ROISfix(data1, data2)
+    
+    try:
+        df = pd.read_xml(roisfix_xml, xpath=".//rf")
+    except ValueError:
+        return pd.Series()
+        
+    level_1_column_mapping = {
+        'R1W': 'RATE_1_WEEK',
+        'R2W': 'RATE_2_WEEK',
+        'R1M': 'RATE_1_MONTH',
+        'R1M': 'RATE_2_MONTH', 
+        'R2M': 'RATE_3_MONTH',   
+        'R6M': 'RATE_6_MONTH'
+        }  
+                                   
+    df = normalize_data(data=df, period=period, symbol='rf', level_1=level_1_column_mapping)     
+    return df
