@@ -7,12 +7,20 @@ import pandas as pd
 from cbr.cbr_settings import make_cbr_client
 from cbr.helpers import normalize_data, guess_date, pad_missing_periods, calculate_inverse_rate
 
+
 today = date.today()
 
 
 def get_currencies_list() -> pd.DataFrame:
     """
-    Get a list of available currencies from CBR.RU.
+    Get a list of available currencies from the Central Bank of Russia.
+    
+    Returns a comprehensive list of currencies available from the Central Bank of Russia
+    with both daily and monthly time series data. The list includes currency codes,
+    character codes, names, and other metadata.
+    
+    Returns:
+        pd.DataFrame: Combined dataframe with all available currencies for daily and monthly frequencies
     """
     cbr_client = make_cbr_client()
     # get currency table with DAILY time series
@@ -27,8 +35,20 @@ def get_currencies_list() -> pd.DataFrame:
 
 def get_currency_code(ticker: str) -> str:
     """
-    Return an internal CBR currency code for a ticker:
-    USDRUB.CBR -> R01235
+    Return an internal CBR currency code for a ticker.
+    
+    Converts a currency ticker (e.g., 'USDRUB.CBR') to the internal CBR currency code
+    (e.g., 'R01235'). Handles cases where multiple currency codes might exist for the
+    same ticker by selecting the first available option.
+    
+    Args:
+        ticker: Currency ticker in format 'CCY1CCY2.CBR' (e.g., 'USDRUB.CBR')
+    
+    Returns:
+        str: Internal CBR currency code
+        
+    Raises:
+        ValueError: If the currency ticker is not found in the CBR database
     """
     cbr_symbol = ticker[:3]
     currencies_list = get_currencies_list()
@@ -44,14 +64,25 @@ def get_currency_code(ticker: str) -> str:
 
 def get_time_series(symbol: str, first_date: str, last_date: str, period: str = 'D') -> pd.Series:
     """
-    Get currency rate historical data from CBR.RU.
-
-    Some tickers (EEKRUB.CBR) return empy data.
-
-    Input Columns:
-    'rowOrder', 'Vcode', 'VunitRate', 'Vnom', 'CursDate', 'Vcurs', 'id'
-    or
-    'rowOrder', 'id', 'Vnom', 'Vcode', 'CursDate', 'Vcurs'
+    Get currency rate historical data from the Central Bank of Russia.
+    
+    Retrieves historical exchange rate data for the specified currency pair and date range.
+    Supports both direct and inverse rate calculations. Handles data normalization, missing
+    period padding, and resampling for different frequencies.
+    
+    Note: Some tickers (like EEKRUB.CBR) may return empty data if not available.
+    
+    Args:
+        symbol: Currency pair symbol in format 'CCY1CCY2.CBR' (e.g., 'USDRUB.CBR')
+        first_date: Start date in format 'YYYY-MM-DD' or 'YYYY-MM'
+        last_date: End date in format 'YYYY-MM-DD' or 'YYYY-MM'
+        period: Data frequency ('D' for daily, 'M' for monthly)
+    
+    Returns:
+        pd.Series: Time series of currency exchange rates
+        
+    Raises:
+        ValueError: If the CBR data format has changed unexpectedly
     """
     try:
         data1 = datetime.strptime(first_date, "%Y-%m-%d")
