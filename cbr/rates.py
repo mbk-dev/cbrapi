@@ -13,7 +13,21 @@ today = date.today()
 def get_key_rate(first_date: Optional[str] = None,
                  last_date: Optional[str] = None,
                  period: str = 'D') -> pd.Series:
+    """
+    Get the key rate time series from the Central Bank of Russia.
     
+    The key rate is the main instrument of the Bank of Russia's monetary policy.
+    It influences interest rates in the economy and is used for liquidity provision 
+    and absorption operations.
+    
+    Args:
+        first_date: Start date in format 'YYYY-MM-DD' (optional, defaults to '2013-09-13')
+        last_date: End date in format 'YYYY-MM-DD' (optional, defaults to current date)
+        period: Data periodicity ('D' for daily, etc.)
+    
+    Returns:
+        pd.Series: Time series of key rate values
+    """    
     cbr_client = make_cbr_client()
     data1 = guess_date(first_date, default_value='2013-09-13')
     data2 = guess_date(last_date, default_value=str(today))
@@ -34,8 +48,31 @@ def get_key_rate(first_date: Optional[str] = None,
     
 def get_ibor(first_date: Optional[str] = None,
                  last_date: Optional[str] = None,
-                 period: str = 'M') -> pd.Series:
+                 period: str = 'M') -> pd.DataFrame:
+    """
+    Get Interbank Offered Rate and related interbank rates  from the Central Bank of Russia.
     
+    Returns a comprehensive DataFrame with various interbank rates for different
+    currencies (RUB and USD) and tenors. Includes rates such as MIBID, MIBOR, MIACR,
+    and their various modifications with turnover data.
+    
+    Tenors available: 1 day (D1), 7 days (D7), 30 days (D30), 180 days (D180), 360 days (D360)
+    
+    Rate types include:
+    - MIBID: Moscow Interbank Bid Rate
+    - MIBOR: Moscow Interbank Offered Rate  
+    - MIACR: Moscow Interbank Actual Credit Rate
+    - MIACR_IG: MIACR for investment grade
+    - MIACR_B: MIACR for banks
+    
+    Args:
+        first_date: Start date in format 'YYYY-MM-DD' (optional, defaults to '2013-09-13')
+        last_date: End date in format 'YYYY-MM-DD' (optional, defaults to current date)
+        period: Data periodicity ('M' for monthly, etc.)
+    
+    Returns:
+        pd.DataFrame: Multi-level DataFrame with interbank rates for different tenors and rate types
+    """    
     cbr_client = make_cbr_client()
     data1 = guess_date(first_date, default_value='2013-09-13')
     data2 = guess_date(last_date, default_value=str(today))
@@ -72,7 +109,6 @@ def get_ibor(first_date: Optional[str] = None,
         '15': 'MIACR_B_USD',
         '16': 'MIACR_B_USD_TURNOVER'              
         }   
-      
-    
+
     df = normalize_data(data=df, period=period, symbol='MKR', level_0=level_0_column_mapping, level_1=level_1_column_mapping)  
     return df   

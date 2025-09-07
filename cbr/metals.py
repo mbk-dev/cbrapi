@@ -6,13 +6,32 @@ import pandas as pd
 from cbr.cbr_settings import make_cbr_client
 from cbr.helpers import normalize_data, guess_date
 
+
 today = date.today()
 
 
 def get_metals_prices(first_date: Optional[str] = None,
                      last_date: Optional[str] = None,
-                     period: str = 'D') -> pd.Series:
-
+                     period: str = 'D') -> pd.DataFrame:
+    """
+    Get precious metals prices time series from the Central Bank of Russia.
+    
+    Returns a DataFrame with daily prices for four precious metals:
+    - GOLD: Gold prices
+    - SILVER: Silver prices  
+    - PLATINUM: Platinum prices
+    - PALLADIUM: Palladium prices
+    
+    Prices are provided in Russian Rubles per gram.
+    
+    Args:
+        first_date: Start date in format 'YYYY-MM-DD' (optional, defaults to '1999-10-01')
+        last_date: End date in format 'YYYY-MM-DD' (optional, defaults to current date)
+        period: Data periodicity ('D' for daily, etc.)
+    
+    Returns:
+        pd.DataFrame: Time series of precious metals prices with columns for each metal
+    """
     cbr_client = make_cbr_client()
     data1 = guess_date(first_date, default_value='1999-10-01')
     data2 = guess_date(last_date, default_value=str(today))
