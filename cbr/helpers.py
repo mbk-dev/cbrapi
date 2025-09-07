@@ -35,7 +35,7 @@ def set_datetime_index(data):
     return data
     
 def remove_unnecessary_columns(data):
-    data.drop(columns=[col for col in ['id', 'rowOrder'] if col in data.columns], inplace=True)
+    data.drop(columns=[col for col in ['id', 'rowOrder', 'vol', 'DateUpdate'] if col in data.columns], inplace=True)
     return data 
     
 def unstack_groups(data, symbol):
