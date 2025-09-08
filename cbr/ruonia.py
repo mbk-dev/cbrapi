@@ -159,8 +159,6 @@ def get_roisfix(first_date: Optional[str] = None,
         df = pd.read_xml(roisfix_xml, xpath=".//rf")
     except ValueError:
         return pd.Series()
-    
-    print(df)
         
     level_1_column_mapping = {
         'R1W': 'RATE_1_WEEK',
