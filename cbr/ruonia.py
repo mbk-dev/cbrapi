@@ -15,7 +15,7 @@ def get_ruonia_ts(symbol: str,
                   last_date: Optional[str] = None,
                   period: str = 'D') -> pd.Series:
     """
-    Get RUONIA (Ruble Overnight Index Swap Fixing) time series data for the specified symbol from the Central Bank of Russia.
+    Get RUONIA (Ruble Overnight Index Average) time series data for the specified symbol from the Central Bank of Russia.
     
     Supported symbols:
     - RUONIA.INDX - RUONIA index
@@ -48,7 +48,7 @@ def get_ruonia_index(first_date: Optional[str] = None,
                      last_date: Optional[str] = None,
                      period: str = 'D') -> pd.DataFrame:
     """
-    Get RUONIA (Ruble Overnight Index Swap Fixing) index and averages time series from the Central Bank of Russia.
+    Get RUONIA (Ruble Overnight Index Average) index and averages time series from the Central Bank of Russia.
 
     Returns a DataFrame with columns:
     - RUONIA_INDEX: RUONIA index value
@@ -93,7 +93,7 @@ def get_ruonia_overnight(first_date: Optional[str] = None,
                          last_date: Optional[str] = None,
                          period: str = 'D') -> pd.Series:
     """
-    Get RUONIA (Ruble Overnight Index Swap Fixing) overnight value time series from the Central Bank of Russia.
+    Get RUONIA (Ruble Overnight Index Average) overnight value time series from the Central Bank of Russia.
 
     RUONIA (Ruble Overnight Index Average) is the weighted average interest rate 
     on interbank loans and deposits. It serves as an indicator of the cost of 
