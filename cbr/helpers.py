@@ -24,6 +24,9 @@ def calculate_inverse_rate(close_ts):
     return 1. / close_ts
 
 def set_datetime_index(data):
+    """
+    Set datetime index for DataFrame by detecting date columns.
+    """    
     if not isinstance(data.index, pd.DatetimeIndex):
         for col in data.columns:
             if any(keyword in str(col) for keyword in ['CDate', 'DateMet', 'D0', 'DT']):
@@ -35,10 +38,16 @@ def set_datetime_index(data):
     return data
     
 def remove_unnecessary_columns(data):
+    """
+    Remove unnecessary columns from DataFrame.
+    """    
     data.drop(columns=[col for col in ['id', 'rowOrder', 'vol', 'DateUpdate'] if col in data.columns], inplace=True)
     return data 
     
 def unstack_groups(data, symbol):
+    """
+    Unstack grouped data based on symbol type.
+    """    
     if symbol == 'DrgMet':       
         data = data.groupby([data.index, 'CodMet'])['price'].first().unstack()
         data.columns.name = None
@@ -51,6 +60,9 @@ def unstack_groups(data, symbol):
     return data 
     
 def column_rename(data, level_0, level_1):
+    """
+    Rename columns based on mapping dictionaries.
+    """    
     if isinstance(data.columns, pd.MultiIndex):
         if level_0:
             new_level_0 = data.columns.levels[0].map(
@@ -65,13 +77,21 @@ def column_rename(data, level_0, level_1):
             data.columns = data.columns.set_levels(new_level_1, level=1)
                 
     else:
-        data = data.rename(columns=level_1)
-        available_columns = [col for col in level_1.values() if col in data.columns]
-        data = data[available_columns] if available_columns else data
+        if level_1 and isinstance(level_1, dict):
+            data = data.rename(columns=level_1)
+            available_columns = [col for col in level_1.values() if col in data.columns]
+            data = data[available_columns] if available_columns else data
+           
+        else:
+            if level_1 and not isinstance(level_1, dict):
+                if len(data.columns) == 1:
+                    data = data.rename(columns={data.columns[0]: str(level_1)})
     return data
     
 def normalize_data(data, period, level_0=None,level_1=None, symbol=None):
-    
+    """
+    Normalize time series data through multiple processing steps.
+    """    
     if isinstance(data, pd.Series):
         data = data.to_frame()    
 
