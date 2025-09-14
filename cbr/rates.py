@@ -14,20 +14,38 @@ def get_key_rate(first_date: Optional[str] = None,
                  last_date: Optional[str] = None,
                  period: str = 'D') -> pd.Series:
     """
-    Get the key rate time series from the Central Bank of Russia.
+    Get the key rate time series from CBR.
     
+    Parameters
+    ----------
+    first_date : str, optional
+        Start date in format 'YYYY-MM-DD'. If not specified, defaults to
+        '2013-09-13'.
+    
+    last_date : str, optional
+        End date in format 'YYYY-MM-DD'. If not specified, defaults to
+        current date.
+    
+    period : {'D'}, default 'D'
+        Data periodicity. Currently only daily ('D') frequency is supported.
+    
+    Returns
+    -------
+    pd.Series
+        Time series of key rate values with datetime index.
+        Rates are returned as decimals (e.g., 0.075 for 7.5%).
+
+    Notes
+    -----
     The key rate is the main instrument of the Bank of Russia's monetary policy.
     It influences interest rates in the economy and is used for liquidity provision 
     and absorption operations.
     
-    Args:
-        first_date: Start date in format 'YYYY-MM-DD' (optional, defaults to '2013-09-13')
-        last_date: End date in format 'YYYY-MM-DD' (optional, defaults to current date)
-        period: Data periodicity ('D' for daily, etc.)
-    
-    Returns:
-        pd.Series: Time series of key rate values
-    """    
+    Examples
+    --------
+    >>> get_key_rate('2023-01-01', '2023-12-31')
+    >>> get_key_rate(period='D')
+    """  
     cbr_client = make_cbr_client()
     data1 = guess_date(first_date, default_value='2013-09-13')
     data2 = guess_date(last_date, default_value=str(today))
@@ -50,29 +68,62 @@ def get_ibor(first_date: Optional[str] = None,
                  last_date: Optional[str] = None,
                  period: str = 'M') -> pd.DataFrame:
     """
-    Get Interbank Offered Rate and related interbank rates  from the Central Bank of Russia.
+    Get Interbank Offered Rate and related interbank rates from CBR.
     
-    Returns a comprehensive DataFrame with various interbank rates for different
-    currencies (RUB and USD) and tenors. Includes rates such as MIBID, MIBOR, MIACR,
-    and their various modifications with turnover data.
+    Parameters
+    ----------
+    first_date : str, optional
+        Start date in format 'YYYY-MM-DD'. If not specified, defaults to
+        '2013-09-13'.
     
-    Tenors available: 1 day (D1), 7 days (D7), 30 days (D30), 180 days (D180), 360 days (D360)
+    last_date : str, optional
+        End date in format 'YYYY-MM-DD'. If not specified, defaults to
+        current date.
     
-    Rate types include:
-    - MIBID: Moscow Interbank Bid Rate
-    - MIBOR: Moscow Interbank Offered Rate  
-    - MIACR: Moscow Interbank Actual Credit Rate
-    - MIACR_IG: MIACR for investment grade
-    - MIACR_B: MIACR for banks
+    period : {'M'}, default 'M'
+        Data periodicity. Currently only monthly ('M') frequency is supported.
     
-    Args:
-        first_date: Start date in format 'YYYY-MM-DD' (optional, defaults to '2013-09-13')
-        last_date: End date in format 'YYYY-MM-DD' (optional, defaults to current date)
-        period: Data periodicity ('M' for monthly, etc.)
+    Returns
+    -------
+    pd.DataFrame
+        Multi-level DataFrame with datetime index containing interbank rates.
+        First level columns represent tenors, second level represents rate types:
+        
+        Available loan terms:
+        - D1 : 1 day
+        - D7 : 7 days  
+        - D30 : 30 days
+        - D180 : 180 days
+        - D360 : 360 days
+        
+        Rate types include:
+        - MIBID_RUB : Moscow Interbank Bid Rate (RUB)
+        - MIBOR_RUB : Moscow Interbank Offered Rate (RUB)
+        - MIACR_RUB : Moscow Interbank Actual Credit Rate (RUB)
+        - MIACR_IG_RUB : MIACR for investment grade (RUB)
+        - MIACR_RUB_TURNOVER : MIACR turnover (RUB)
+        - MIACR_IG_RUB_TURNOVER : MIACR IG turnover (RUB)
+        - MIACR_B_RUB : MIACR for banks (RUB)
+        - MIACR_B_RUB_TURNOVER : MIACR banks turnover (RUB)
+        - MIBID_USD : Moscow Interbank Bid Rate (USD)
+        - MIBOR_USD : Moscow Interbank Offered Rate (USD)
+        - MIACR_USD : Moscow Interbank Actual Credit Rate (USD)
+        - MIACR_IG_USD : MIACR for investment grade (USD)
+        - MIACR_USD_TURNOVER : MIACR turnover (USD)
+        - MIACR_IG_USD_TURNOVER : MIACR IG turnover (USD)
+        - MIACR_B_USD : MIACR for banks (USD)
+        - MIACR_B_USD_TURNOVER : MIACR banks turnover (USD)
     
-    Returns:
-        pd.DataFrame: Multi-level DataFrame with interbank rates for different tenors and rate types
-    """    
+    Notes
+    -----
+    All rates are returned as decimals (e.g., 0.05 for 5%).
+    Turnover values represent trading volumes.
+    
+    Examples
+    --------
+    >>> get_ibor('2023-01-01', '2023-12-31')
+    >>> get_ibor(period='M')
+    """   
     cbr_client = make_cbr_client()
     data1 = guess_date(first_date, default_value='2013-09-13')
     data2 = guess_date(last_date, default_value=str(today))

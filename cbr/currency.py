@@ -13,14 +13,24 @@ today = date.today()
 
 def get_currencies_list() -> pd.DataFrame:
     """
-    Get a list of available currencies from the Central Bank of Russia.
+    Get a list of available currencies from CBR.
     
-    Returns a comprehensive list of currencies available from the Central Bank of Russia
-    with both daily and monthly time series data. The list includes currency codes,
-    character codes, names, and other metadata.
+    Returns
+    -------
+    pd.DataFrame
+        Combined dataframe with all available currencies for daily and monthly frequencies.
+        Contains currency codes, character codes, names, and metadata.
     
-    Returns:
-        pd.DataFrame: Combined dataframe with all available currencies for daily and monthly frequencies
+    Notes
+    -----
+    The function retrieves two separate lists:
+    - Currencies with DAILY time series data
+    - Currencies with MONTHLY time series data
+    Returns a combined dataframe with all available currencies.
+    
+    Examples
+    --------
+    >>> get_currencies_list()
     """
     cbr_client = make_cbr_client()
     # get currency table with DAILY time series
@@ -37,18 +47,30 @@ def get_currency_code(ticker: str) -> str:
     """
     Return an internal CBR currency code for a ticker.
     
-    Converts a currency ticker (e.g., 'USDRUB.CBR') to the internal CBR currency code
-    (e.g., 'R01235'). Handles cases where multiple currency codes might exist for the
-    same ticker by selecting the first available option.
+    Parameters
+    ----------
+    ticker : str
+        Currency ticker in format 'CCY1CCY2.CBR' (e.g., 'USDRUB.CBR')
     
-    Args:
-        ticker: Currency ticker in format 'CCY1CCY2.CBR' (e.g., 'USDRUB.CBR')
+    Returns
+    -------
+    str
+        Internal CBR currency code (e.g., 'R01235')
     
-    Returns:
-        str: Internal CBR currency code
-        
-    Raises:
-        ValueError: If the currency ticker is not found in the CBR database
+    Raises
+    ------
+    ValueError
+        If the currency ticker is not found in the CBR database.
+    
+    Notes
+    -----
+    Handles cases where multiple currency codes might exist for the same ticker
+    by selecting the first available option.
+    
+    Examples
+    --------
+    >>> get_currency_code('USDRUB.CBR')
+    'R01235'
     """
     cbr_symbol = ticker[:3]
     currencies_list = get_currencies_list()
@@ -64,25 +86,42 @@ def get_currency_code(ticker: str) -> str:
 
 def get_time_series(symbol: str, first_date: str, last_date: str, period: str = 'D') -> pd.Series:
     """
-    Get currency rate historical data from the Central Bank of Russia.
+    Get currency rate historical data from CBR.
     
-    Retrieves historical exchange rate data for the specified currency pair and date range.
-    Supports both direct and inverse rate calculations. Handles data normalization, missing
-    period padding, and resampling for different frequencies.
+    Parameters
+    ----------
+    symbol : str
+        Currency pair symbol in format 'CCY1CCY2.CBR' (e.g., 'USDRUB.CBR')
+    first_date : str
+        Start date in format 'YYYY-MM-DD' or 'YYYY-MM'
+    last_date : str
+        End date in format 'YYYY-MM-DD' or 'YYYY-MM'
+    period : {'D', 'M'}, default 'D'
+        Data frequency: 'D' for daily, 'M' for monthly
     
-    Note: Some tickers (like EEKRUB.CBR) may return empty data if not available.
+    Returns
+    -------
+    pd.Series
+        Time series of currency exchange rates with datetime index.
     
-    Args:
-        symbol: Currency pair symbol in format 'CCY1CCY2.CBR' (e.g., 'USDRUB.CBR')
-        first_date: Start date in format 'YYYY-MM-DD' or 'YYYY-MM'
-        last_date: End date in format 'YYYY-MM-DD' or 'YYYY-MM'
-        period: Data frequency ('D' for daily, 'M' for monthly)
+    Raises
+    ------
+    ValueError
+        If the CBR data format has changed unexpectedly.
+        If date format is invalid.
+        If currency symbol is not found.
     
-    Returns:
-        pd.Series: Time series of currency exchange rates
-        
-    Raises:
-        ValueError: If the CBR data format has changed unexpectedly
+    Notes
+    -----
+    - Supports both direct and inverse rate calculations
+    - Handles data normalization and missing period padding
+    - Performs resampling for different frequencies
+    - Some tickers may return empty data if not available
+    
+    Examples
+    --------
+    >>> get_time_series('USDRUB.CBR', '2023-01-01', '2023-12-31', 'D')
+    >>> get_time_series('EURUSD.CBR', '2023-01', '2023-12', 'M')
     """
     try:
         data1 = datetime.strptime(first_date, "%Y-%m-%d")

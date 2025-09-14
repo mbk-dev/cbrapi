@@ -14,23 +14,39 @@ def get_metals_prices(first_date: Optional[str] = None,
                      last_date: Optional[str] = None,
                      period: str = 'D') -> pd.DataFrame:
     """
-    Get precious metals prices time series from the Central Bank of Russia.
+    Get precious metals prices time series from CBR.
     
-    Returns a DataFrame with daily prices for four precious metals:
-    - GOLD: Gold prices
-    - SILVER: Silver prices  
-    - PLATINUM: Platinum prices
-    - PALLADIUM: Palladium prices
+    Parameters
+    ----------
+    first_date : str, optional
+        Start date in format 'YYYY-MM-DD'. If not specified, defaults to
+        '1999-10-01'.
     
+    last_date : str, optional
+        End date in format 'YYYY-MM-DD'. If not specified, defaults to
+        current date.
+    
+    period : {'D'}, default 'D'
+        Data periodicity. Currently only daily ('D') frequency is supported.
+    
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with datetime index and the following columns:
+        - GOLD : Gold price (RUB per gram)
+        - SILVER : Silver price (RUB per gram)
+        - PLATINUM : Platinum price (RUB per gram)
+        - PALLADIUM : Palladium price (RUB per gram)
+    
+    Notes
+    -----
     Prices are provided in Russian Rubles per gram.
+    Data is available from October 1999.
     
-    Args:
-        first_date: Start date in format 'YYYY-MM-DD' (optional, defaults to '1999-10-01')
-        last_date: End date in format 'YYYY-MM-DD' (optional, defaults to current date)
-        period: Data periodicity ('D' for daily, etc.)
-    
-    Returns:
-        pd.DataFrame: Time series of precious metals prices with columns for each metal
+    Examples
+    --------
+    >>> get_metals_prices('2023-01-01', '2023-12-31')
+    >>> get_metals_prices(period='M')
     """
     cbr_client = make_cbr_client()
     data1 = guess_date(first_date, default_value='1999-10-01')

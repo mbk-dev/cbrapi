@@ -14,28 +14,47 @@ def get_mrrf(first_date: Optional[str] = None,
                      last_date: Optional[str] = None,
                      period: str = 'M') -> pd.DataFrame:
     """
-    Get International Reserves and Foreign Currency Liquidity data from the Central Bank of Russia.
+    Get International Reserves and Foreign Currency Liquidity data from CBR.
     
-    Returns a DataFrame with monthly data on Russia's international reserves components:
-    - TOTAL_RESERVES: Total international reserves
-    - CURRENCY_RESERVES: Currency reserves
-    - FOREIGN_CURRENCY: Foreign currency holdings
-    - SDR_ACCOUNT: Special Drawing Rights (SDR) account
-    - IMF_RESERVE: Reserve position in International Monetary Fund (IMF)
-    - MONETARY_GOLD: Monetary gold holdings
+    Parameters
+    ----------
+    first_date : str, optional
+        Start date in format 'YYYY-MM-DD'. If not specified, defaults to
+        '1999-01-01'.
     
-    International reserves are external assets that are readily available to and controlled by 
-    monetary authorities for meeting balance of payments financing needs, for intervention in 
-    exchange markets to affect the currency exchange rate, and for other related purposes.
+    last_date : str, optional
+        End date in format 'YYYY-MM-DD'. If not specified, defaults to
+        current date.
     
-    Args:
-        first_date: Start date in format 'YYYY-MM-DD' (optional, defaults to '1999-01-01')
-        last_date: End date in format 'YYYY-MM-DD' (optional, defaults to current date)
-        period: Data periodicity ('M' for monthly, etc.)
+    period : {'M'}, default 'M'
+        Data periodicity. Currently only monthly ('M') frequency is supported.
     
-    Returns:
-        pd.DataFrame: Time series of international reserves components in USD
-    """    
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame with datetime index and the following columns:
+        - TOTAL_RESERVES : Total international reserves (USD)
+        - CURRENCY_RESERVES : Currency reserves (USD)
+        - FOREIGN_CURRENCY : Foreign currency holdings (USD)
+        - SDR_ACCOUNT : Special Drawing Rights (SDR) account (USD)
+        - IMF_RESERVE : Reserve position in IMF (USD)
+        - MONETARY_GOLD : Monetary gold holdings (USD)
+    
+    Notes
+    -----
+    International reserves are external assets that are readily available to and 
+    controlled by monetary authorities for:
+    - Meeting balance of payments financing needs
+    - Intervention in exchange markets to affect currency exchange rate
+    - Other related purposes
+    
+    All values are reported in US dollars.
+    
+    Examples
+    --------
+    >>> get_mrrf('2020-01-01', '2023-12-31')
+    >>> get_mrrf(period='M')
+    """  
     cbr_client = make_cbr_client()
     data1 = guess_date(first_date, default_value='1999-01-01')
     data2 = guess_date(last_date, default_value=str(today))    
