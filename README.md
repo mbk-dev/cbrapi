@@ -2,35 +2,36 @@
 [![Python](https://img.shields.io/badge/python-v3-brightgreen.svg)](https://www.python.org/)
 [![PyPI Latest Release](https://img.shields.io/pypi/v/okama.svg)](https://pypi.org/project/okama/)
 [![License](https://img.shields.io/pypi/l/okama.svg)](https://opensource.org/licenses/MIT)
-[![Downloads](https://static.pepy.tech/badge/cbr-api-client)](https://pepy.tech/project/cbr-api-client)
+[![Downloads](https://static.pepy.tech/badge/cbr-api-client)](https://pepy.tech/project/cbr-api)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-# CBR
+# CBR-API
 
-_CBR_ is a Python client for the Central Bank of Russia's web services.
+`cbr-api` is a Python client for the Central Bank of Russia's web services.
 
 ## Table of contents
 
-- [CBR main features](##CBR-main-features)
-- [Core Functions](##Core Functions)
-  - [CURRENCY](###financial-data-and-macroeconomic-indicators)
-    - [Get a list of available currencies](####Get a list of available currencies)
-    - [Get an internal CBR currency code for a ticker](####Get an internal CBR currency code for a ticker)
-    - [Get currency rate historical data](####Get currency rate historical data)
-  - [METALS](###financial-data-and-macroeconomic-indicators)
-    - [Get precious metals prices time series](####Get precious metals prices time series)
-  - [RATES](###financial-data-and-macroeconomic-indicators)
-    - [Get the key rate time series](####Get the key rate time series)
-    - [Get Interbank Offered Rate and related interbank rates](####Get Interbank Offered Rate and related interbank rates)
-  - [RESERVES](###financial-data-and-macroeconomic-indicators)
-    - [Get International Reserves and Foreign Currency Liquidity data](####Get International Reserves and Foreign Currency Liquidity data)
-  - [RUONIA](###financial-data-and-macroeconomic-indicators)
-    - [Get RUONIA time series data](####Get RUONIA time series data)
-    - [Get RUONIA index and averages time series](####Get RUONIA index and averages time series)
-    - [Get RUONIA overnight value time series](####Get RUONIA overnight value time series)
-    - [Get ROISfix time series](####Get ROISfix time series)
+- [CBR main features](##cbr-main-features)
+- [Core Functions](##core Functions)
+  - [CURRENCY](###currency)
+    - [Get a list of available currencies](####get-a-list-of-available-currencies)
+    - [Get an internal CBR currency code for a ticker](####get-an-internal-cbr-currency-code-for-a-ticker)
+    - [Get currency rate historical data](####get-currency-rate-historical-data)
+  - [METALS](###metals)
+    - [Get precious metals prices time series](####get-precious-metals-prices-time-series)
+  - [RATES](###rates)
+    - [Get the key rate time series](####get-the-key-rate-time-series)
+    - [Get Interbank Offered Rate and related interbank rates](####get-interbank-offered-rate-and-related-interbank-rates)
+  - [RESERVES](###reserves)
+    - [Get International Reserves and Foreign Currency Liquidity data](####get-international-reserves-and-foreign-currency-liquidity-data)
+  - [RUONIA](###ruonia)
+    - [Get RUONIA time series data](####get-ruonia-time-series-data)
+    - [Get RUONIA index and averages time series](####get-ruonia-index-and-averages-time-series)
+    - [Get RUONIA overnight value time series](####get-ruonia-overnight-value-time-series)
+    - [Get ROISfix time series](####get-roisfix-time-series)
 - [Installation](##installation)
 - [Getting started](##getting-started)
-- [License](##getting-started)
+- [License](##license)
 
 ## CBR main features
 This client provides structured access to the following key data categories from the CBR:  
@@ -45,39 +46,50 @@ This client provides structured access to the following key data categories from
 ### CURRENCY
 
 ####Get a list of available currencies
+get_currencies_list()
 
 ####Get an internal CBR currency code for a ticker
+get_currency_code(ticker: str)
 
 ####Get currency rate historical data
+get_time_series(symbol: str, first_date: str, last_date: str, period: str = 'D')
 
 ### METALS
 
 ####Get precious metals prices time series
+get_metals_prices(first_date: Optional[str] = None, last_date: Optional[str] = None, period: str = 'D')
 
 ### RATES
 
 ####Get the key rate time series
+get_key_rate(first_date: Optional[str] = None, last_date: Optional[str] = None, period: str = 'D')
 
 ####Get Interbank Offered Rate and related interbank rates
+get_ibor(first_date: Optional[str] = None, last_date: Optional[str] = None, period: str = 'M')
 
 ### RESERVES
 
 ####Get International Reserves and Foreign Currency Liquidity data
+get_mrrf(first_date: Optional[str] = None, last_date: Optional[str] = None, period: str = 'M')
 
 ### RUONIA
 
 ####Get RUONIA time series data
+get_ruonia_ts(symbol: str, first_date: Optional[str] = None, last_date: Optional[str] = None, period: str = 'D')
 
 ####Get RUONIA index and averages time series
+get_ruonia_index(first_date: Optional[str] = None, last_date: Optional[str] = None, period: str = 'D')
 
 ####Get RUONIA overnight value time series
+get_ruonia_overnight(first_date: Optional[str] = None, last_date: Optional[str] = None, period: str = 'D')
 
 ####Get ROISfix time series
+get_roisfix(first_date: Optional[str] = None, last_date: Optional[str] = None, period: str = 'D')
 
 ## Installation
 
 ```bash
-`pip install cbr-api-client`
+`pip install cbr-api`
 ```
 
 The latest development version can be installed directly from GitHub:
@@ -117,9 +129,9 @@ print(metals)
 ```
 ![](../images/images/readme3.jpg?raw=true) 
 
-### 3. Analyze international reserves data
+### 4. Analyze international reserves data
 ```python
-reserves = cbr.get_reserves_data('2023-01-01', '2024-12-31')
+reserves = cbr.get_mrrf('2023-01-01', '2024-12-31')
 print(reserves)
 ```
 ![](../images/images/readme4.jpg?raw=true) 
