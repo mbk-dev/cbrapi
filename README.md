@@ -89,7 +89,7 @@ get_roisfix(first_date: Optional[str] = None, last_date: Optional[str] = None, p
 ## Installation
 
 ```bash
-`pip install cbr-api`
+pip install cbr-api
 ```
 
 The latest development version can be installed directly from GitHub:
