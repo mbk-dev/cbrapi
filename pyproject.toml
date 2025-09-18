@@ -15,6 +15,9 @@ requests = "*"
 suds-py3 = "*"
 lxml = "*"
 
+[tool.poetry.group.dev.dependencies]
+black = "^25.1.0"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

@@ -11,7 +11,7 @@
 
 ## Table of contents
 
-- [CBR main features](#cbr-main-features)
+- [CBR-API main features](#cbr-api-main-features)
 - [Core Functions](#core-functions)
   - [CURRENCY](#currency)
     - [Get a list of available currencies](#get-a-list-of-available-currencies)
@@ -33,7 +33,7 @@
 - [Getting started](#getting-started)
 - [License](#license)
 
-## CBR main features
+## CBR-API main features
 This client provides structured access to the following key data categories from the CBR:  
 - CURRENCY: Official exchange rates of foreign currencies against the Russian Ruble.
 - METALS: Official prices of precious metals.
@@ -46,45 +46,45 @@ This client provides structured access to the following key data categories from
 ### CURRENCY
 
 #### Get a list of available currencies
-`get_currencies_list()`
+`get_currencies_list()`  
 
 #### Get an internal CBR currency code for a ticker
-`get_currency_code(ticker: str)`
+`get_currency_code(ticker: str)`  
 
 #### Get currency rate historical data
-`get_time_series(symbol: str, first_date: str, last_date: str, period: str = 'D')`   
+`get_time_series(symbol: str, first_date: str, last_date: str, period: str = 'D')`  
 
 ### METALS
 
 #### Get precious metals prices time series
-`get_metals_prices(first_date: Optional[str] = None, last_date: Optional[str] = None, period: str = 'D')`   
+`get_metals_prices(first_date: Optional[str] = None, last_date: Optional[str] = None, period: str = 'D')`  
 
 ### RATES
 
 #### Get the key rate time series
-`get_key_rate(first_date: Optional[str] = None, last_date: Optional[str] = None, period: str = 'D')`   
+`get_key_rate(first_date: Optional[str] = None, last_date: Optional[str] = None, period: str = 'D')`  
 
 #### Get Interbank Offered Rate and related interbank rates
-`get_ibor(first_date: Optional[str] = None, last_date: Optional[str] = None, period: str = 'M')`   
+`get_ibor(first_date: Optional[str] = None, last_date: Optional[str] = None, period: str = 'M')`  
 
 ### RESERVES
 
 #### Get International Reserves and Foreign Currency Liquidity data
-`get_mrrf(first_date: Optional[str] = None, last_date: Optional[str] = None, period: str = 'M')`   
+`get_mrrf(first_date: Optional[str] = None, last_date: Optional[str] = None, period: str = 'M')`  
 
 ### RUONIA
 
 #### Get RUONIA time series data
-`get_ruonia_ts(symbol: str, first_date: Optional[str] = None, last_date: Optional[str] = None, period: str = 'D')`   
+`get_ruonia_ts(symbol: str, first_date: Optional[str] = None, last_date: Optional[str] = None, period: str = 'D')`  
 
 #### Get RUONIA index and averages time series
-`get_ruonia_index(first_date: Optional[str] = None, last_date: Optional[str] = None, period: str = 'D')`   
+`get_ruonia_index(first_date: Optional[str] = None, last_date: Optional[str] = None, period: str = 'D')`  
 
 #### Get RUONIA overnight value time series
-`get_ruonia_overnight(first_date: Optional[str] = None, last_date: Optional[str] = None, period: str = 'D')`   
+`get_ruonia_overnight(first_date: Optional[str] = None, last_date: Optional[str] = None, period: str = 'D')`  
 
 #### Get ROISfix time series
-`get_roisfix(first_date: Optional[str] = None, last_date: Optional[str] = None, period: str = 'D')`     
+`get_roisfix(first_date: Optional[str] = None, last_date: Optional[str] = None, period: str = 'D')`  
 
 ## Installation
 
@@ -102,10 +102,11 @@ poetry install
 
 ## Getting started
 
+
 ### 1. Get USD/RUB exchange rate with historical data
 
 ```python
-import okama as ok
+import cbr-api as cbr
 
 usd_rub = cbr.get_currency_rate('USDRUB.CBR', '2024-01-01', '2024-12-31')
 print(usd_rub)
@@ -129,12 +130,14 @@ print(metals)
 ```
 ![](../images/images/readme3.jpg?raw=true) 
 
+
 ### 4. Analyze international reserves data
 ```python
 reserves = cbr.get_mrrf('2023-01-01', '2024-12-31')
 print(reserves)
 ```
 ![](../images/images/readme4.jpg?raw=true) 
+
 
 ## License
 
