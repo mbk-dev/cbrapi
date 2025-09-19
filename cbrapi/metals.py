@@ -3,8 +3,8 @@ from typing import Optional
 
 import pandas as pd
 
-from cbr.cbr_settings import make_cbr_client
-from cbr.helpers import normalize_data, guess_date
+from cbrapi.cbr_settings import make_cbr_client
+from cbrapi.helpers import normalize_data, guess_date
 
 
 today = date.today()

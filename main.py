@@ -1,4 +1,4 @@
-import cbr
+import cbrapi as cbr
 
 print(cbr.currency.get_currencies_list())
 
