@@ -1,8 +1,8 @@
 
 [![Python](https://img.shields.io/badge/python-v3-brightgreen.svg)](https://www.python.org/)
-[![PyPI Latest Release](https://img.shields.io/pypi/v/okama.svg)](https://pypi.org/project/okama/)
+[![PyPI Latest Release](https://img.shields.io/pypi/v/okama.svg)](https://pypi.org/project/cbrapi/)
 [![License](https://img.shields.io/pypi/l/okama.svg)](https://opensource.org/licenses/MIT)
-[![Downloads](https://static.pepy.tech/badge/cbr-api-client)](https://pepy.tech/project/cbr-api)
+[![Downloads](https://static.pepy.tech/badge/cbr-api-client)](https://pepy.tech/project/cbrapi)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 # CBRAPI
@@ -68,7 +68,7 @@ Fetches the historical Interbank Offered Rate and related interbank rates.
 MRRF: International Reserves and Foreign Currency Liquidity.  
 
 #### Get International Reserves and Foreign Currency Liquidity data
-Provides time series data for International Reserves and Foreign Currency Liquidity.
+Provides time series data for International Reserves and Foreign Currency Liquidity.  
 `get_mrrf(first_date: Optional[str] = None, last_date: Optional[str] = None, period: str = 'M')`  
 
 ### RUONIA
