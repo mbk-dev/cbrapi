@@ -5,35 +5,23 @@
 [![Downloads](https://static.pepy.tech/badge/cbr-api-client)](https://pepy.tech/project/cbr-api)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-# CBR-API
+# CBRAPI
 
-`cbr-api` is a Python client for the Central Bank of Russia's web services.
+`cbrapi` is a Python client for the Central Bank of Russia's web services.
 
 ## Table of contents
 
 - [CBR-API main features](#cbr-api-main-features)
 - [Core Functions](#core-functions)
   - [CURRENCY](#currency)
-    - [Get a list of available currencies](#get-a-list-of-available-currencies)
-    - [Get an internal CBR currency code for a ticker](#get-an-internal-cbr-currency-code-for-a-ticker)
-    - [Get currency rate historical data](#get-currency-rate-historical-data)
   - [METALS](#metals)
-    - [Get precious metals prices time series](#get-precious-metals-prices-time-series)
   - [RATES](#rates)
-    - [Get the key rate time series](#get-the-key-rate-time-series)
-    - [Get Interbank Offered Rate and related interbank rates](#get-interbank-offered-rate-and-related-interbank-rates)
   - [RESERVES](#reserves)
-    - [Get International Reserves and Foreign Currency Liquidity data](#get-international-reserves-and-foreign-currency-liquidity-data)
   - [RUONIA](#ruonia)
-    - [Get RUONIA time series data](#get-ruonia-time-series-data)
-    - [Get RUONIA index and averages time series](#get-ruonia-index-and-averages-time-series)
-    - [Get RUONIA overnight value time series](#get-ruonia-overnight-value-time-series)
-    - [Get ROISfix time series](#get-roisfix-time-series)
-- [Installation](#installation)
 - [Getting started](#getting-started)
 - [License](#license)
 
-## CBR-API main features
+## CBRAPI main features
 This client provides structured access to the following key data categories from the CBR:  
 - CURRENCY: Official exchange rates of foreign currencies against the Russian Ruble.
 - METALS: Official prices of precious metals.
@@ -46,57 +34,75 @@ This client provides structured access to the following key data categories from
 ### CURRENCY
 
 #### Get a list of available currencies
+Returns a list of all available currency tickers supported by the API.  
 `get_currencies_list()`  
 
 #### Get an internal CBR currency code for a ticker
+Retrieves the internal CBR currency code for a given currency ticker.  
 `get_currency_code(ticker: str)`  
 
 #### Get currency rate historical data
+Fetches historical exchange rate data for a specified currency and date range.  
 `get_time_series(symbol: str, first_date: str, last_date: str, period: str = 'D')`  
 
 ### METALS
 
 #### Get precious metals prices time series
+Provides historical prices for precious metals (Gold, Silver, Platinum, Palladium).  
 `get_metals_prices(first_date: Optional[str] = None, last_date: Optional[str] = None, period: str = 'D')`  
 
 ### RATES
 
+IBOR: Interbank Offered Rate.  
+
 #### Get the key rate time series
+Retrieves the historical key rate set by the Central Bank of Russia.  
 `get_key_rate(first_date: Optional[str] = None, last_date: Optional[str] = None, period: str = 'D')`  
 
 #### Get Interbank Offered Rate and related interbank rates
+Fetches the historical Interbank Offered Rate and related interbank rates.  
 `get_ibor(first_date: Optional[str] = None, last_date: Optional[str] = None, period: str = 'M')`  
 
 ### RESERVES
 
+MRRF: International Reserves and Foreign Currency Liquidity.  
+
 #### Get International Reserves and Foreign Currency Liquidity data
+Provides time series data for International Reserves and Foreign Currency Liquidity.
 `get_mrrf(first_date: Optional[str] = None, last_date: Optional[str] = None, period: str = 'M')`  
 
 ### RUONIA
 
+RUONIA: Russian Overnight Index Average.  
+ROISfix: Russian Overnight Index Swap Fixing.  
+
 #### Get RUONIA time series data
+Retrieves RUONIA time series data for a specific symbol.  
 `get_ruonia_ts(symbol: str, first_date: Optional[str] = None, last_date: Optional[str] = None, period: str = 'D')`  
 
 #### Get RUONIA index and averages time series
+Fetches the historical RUONIA index and averages.  
 `get_ruonia_index(first_date: Optional[str] = None, last_date: Optional[str] = None, period: str = 'D')`  
 
 #### Get RUONIA overnight value time series
+Provides the historical RUONIA overnight value.  
 `get_ruonia_overnight(first_date: Optional[str] = None, last_date: Optional[str] = None, period: str = 'D')`  
 
 #### Get ROISfix time series
+Retrieves the historical ROISfix time series data.  
 `get_roisfix(first_date: Optional[str] = None, last_date: Optional[str] = None, period: str = 'D')`  
 
 ## Installation
 
 ```bash
-pip install cbr-api
+pip install cbrapi
 ```
 
 The latest development version can be installed directly from GitHub:
 
 ```bash
-git clone https://github.com/mbk-dev/cbr.git
-cd cbr
+git clone https://github.com/mbk-dev/cbrapi.git
+cd cbrapi
 poetry install
 ```
 
@@ -106,7 +112,7 @@ poetry install
 ### 1. Get USD/RUB exchange rate with historical data
 
 ```python
-import cbr-api as cbr
+import cbrapi as cbr
 
 usd_rub = cbr.get_currency_rate('USDRUB.CBR', '2024-01-01', '2024-12-31')
 print(usd_rub)
