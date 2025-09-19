@@ -11,7 +11,7 @@
 
 ## Table of contents
 
-- [CBR-API main features](#cbr-api-main-features)
+- [CBRAPI main features](#cbr-api-main-features)
 - [Core Functions](#core-functions)
   - [CURRENCY](#currency)
   - [METALS](#metals)
