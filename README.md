@@ -1,7 +1,7 @@
 
 [![Python](https://img.shields.io/badge/python-v3-brightgreen.svg)](https://www.python.org/)
 [![PyPI Latest Release](https://img.shields.io/pypi/v/cbrapi.svg)](https://pypi.org/project/cbrapi/)
-[![License](https://img.shields.io/pypi/l/cbrapi.svg)](https://opensource.org/licenses/MIT)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Downloads](https://static.pepy.tech/badge/cbrapi)](https://pepy.tech/project/cbrapi)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
