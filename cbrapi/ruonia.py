@@ -38,7 +38,7 @@ def get_ruonia_ts(
         data up to the most recent available date.
 
     period : {'D'}, default 'D'
-        Data periodicity. Currently only daily ('D') frequency is supported.
+        Data periodicity. Currently daily ('D') and monthly ('M') frequencies are supported.
 
     Returns
     -------
@@ -91,7 +91,7 @@ def get_ruonia_index(
         current date.
 
     period : {'D'}, default 'D'
-        Data periodicity. Currently only daily ('D') frequency is supported.
+        Data periodicity. Currently daily ('D') and monthly ('M') frequencies are supported.
 
     Returns
     -------
@@ -153,7 +153,7 @@ def get_ruonia_overnight(
         current date.
 
     period : {'D'}, default 'D'
-        Data periodicity. Currently only daily ('D') frequency is supported.
+        Data periodicity. Currently daily ('D') and monthly ('M') frequencies are supported.
 
     Returns
     -------
@@ -210,7 +210,7 @@ def get_roisfix(
         current date.
 
     period : {'D'}, default 'D'
-        Data periodicity. Currently only daily ('D') frequency is supported.
+        Data periodicity. Currently daily ('D') and monthly ('M') frequencies are supported.
 
     Returns
     -------

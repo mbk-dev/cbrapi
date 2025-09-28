@@ -27,7 +27,7 @@ def get_metals_prices(
         current date.
 
     period : {'D'}, default 'D'
-        Data periodicity. Currently only daily ('D') frequency is supported.
+        Data periodicity. Currently daily ('D') and monthly ('M') frequencies are supported.
 
     Returns
     -------

@@ -101,12 +101,15 @@ def get_time_series(
     ----------
     symbol : str
         Currency pair symbol in format 'CCY1CCY2.CBR' (e.g., 'USDRUB.CBR')
+        
     first_date : str
         Start date in format 'YYYY-MM-DD' or 'YYYY-MM'
+        
     last_date : str
         End date in format 'YYYY-MM-DD' or 'YYYY-MM'
-    period : {'D', 'M'}, default 'D'
-        Data frequency: 'D' for daily, 'M' for monthly
+        
+    period : {'D'}, default 'D'
+        Data periodicity. Currently daily ('D') and monthly ('M') frequencies are supported.
 
     Returns
     -------
