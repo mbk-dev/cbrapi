@@ -109,40 +109,205 @@ poetry install
 ## Getting started
 
 
-### 1. Get USD/RUB exchange rate with historical data
+### 1. Monitor Central Bank's key rate daily changes
 
 ```python
 import cbrapi as cbr
 
-usd_rub = cbr.get_currency_rate('USDRUB.CBR', '2024-01-01', '2024-12-31')
-print(usd_rub)
+cbr.get_key_rate("2017-09-13", "2023-09-13").head()
 ```
-![](../images/images/readme1.jpg?raw=true) 
 
 
-### 2. Monitor Central Bank's key rate monthly changes
+
+
+    DATE
+    2017-09-12    9.0
+    2017-09-13    9.0
+    2017-09-14    9.0
+    2017-09-15    9.0
+    2017-09-16    9.0
+    Freq: D, Name: KEY_RATE, dtype: float64
+
+
+
+
+### 2. Track precious metals market trends
 
 ```python
-key_rate = cbr.get_key_rate('2020-01-01', '2024-12-31', period='M')
-print(key_rate)
+cbr.get_metals_prices('2024-01-01', '2025-01-31').head()
 ```
-![](../images/images/readme2.jpg?raw=true) 
 
 
-### 3. Track precious metals market trends
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>GOLD</th>
+      <th>SILVER</th>
+      <th>PLATINUM</th>
+      <th>PALLADIUM</th>
+    </tr>
+    <tr>
+      <th>DATE</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>2024-01-09</th>
+      <td>5886.06</td>
+      <td>66.40</td>
+      <td>2755.41</td>
+      <td>2915.27</td>
+    </tr>
+    <tr>
+      <th>2024-01-10</th>
+      <td>5848.46</td>
+      <td>66.46</td>
+      <td>2701.63</td>
+      <td>2830.97</td>
+    </tr>
+    <tr>
+      <th>2024-01-11</th>
+      <td>5785.30</td>
+      <td>65.55</td>
+      <td>2654.59</td>
+      <td>2845.84</td>
+    </tr>
+    <tr>
+      <th>2024-01-12</th>
+      <td>5749.64</td>
+      <td>65.26</td>
+      <td>2618.17</td>
+      <td>2833.52</td>
+    </tr>
+    <tr>
+      <th>2024-01-13</th>
+      <td>5749.64</td>
+      <td>65.26</td>
+      <td>2618.17</td>
+      <td>2833.52</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+
+### 3. Monitor ROSFIX daily pricing trends
 ```python
-metals = cbr.get_metals_prices('2024-01-01', '2025-01-31')
-print(metals)
+cbr.get_roisfix().head()
 ```
-![](../images/images/readme3.jpg?raw=true) 
 
 
-### 4. Analyze international reserves data
-```python
-reserves = cbr.get_mrrf('2023-01-01', '2024-12-31')
-print(reserves)
-```
-![](../images/images/readme4.jpg?raw=true) 
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>RATE_1_WEEK</th>
+      <th>RATE_2_WEEK</th>
+      <th>RATE_1_MONTH</th>
+      <th>RATE_2_MONTH</th>
+      <th>RATE_3_MONTH</th>
+      <th>RATE_6_MONTH</th>
+    </tr>
+    <tr>
+      <th>DATE</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>2011-04-14</th>
+      <td>3.09</td>
+      <td>3.09</td>
+      <td>3.18</td>
+      <td>3.24</td>
+      <td>3.32</td>
+      <td>3.51</td>
+    </tr>
+    <tr>
+      <th>2011-04-15</th>
+      <td>3.09</td>
+      <td>3.09</td>
+      <td>3.18</td>
+      <td>3.24</td>
+      <td>3.32</td>
+      <td>3.51</td>
+    </tr>
+    <tr>
+      <th>2011-04-16</th>
+      <td>3.09</td>
+      <td>3.09</td>
+      <td>3.18</td>
+      <td>3.24</td>
+      <td>3.32</td>
+      <td>3.51</td>
+    </tr>
+    <tr>
+      <th>2011-04-17</th>
+      <td>3.08</td>
+      <td>3.09</td>
+      <td>3.19</td>
+      <td>3.24</td>
+      <td>3.31</td>
+      <td>3.50</td>
+    </tr>
+    <tr>
+      <th>2011-04-18</th>
+      <td>3.08</td>
+      <td>3.09</td>
+      <td>3.19</td>
+      <td>3.24</td>
+      <td>3.31</td>
+      <td>3.49</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
 
 
 ## License
