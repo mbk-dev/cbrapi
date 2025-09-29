@@ -26,7 +26,7 @@ def get_metals_prices(
         End date in format 'YYYY-MM-DD'. If not specified, defaults to
         current date.
 
-    period : {'D'}, default 'D'
+    period: {'D', 'M'}, default 'D'
         Data periodicity. Currently daily ('D') and monthly ('M') frequencies are supported.
 
     Returns

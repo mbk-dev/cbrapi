@@ -108,7 +108,7 @@ def get_time_series(
     last_date : str
         End date in format 'YYYY-MM-DD' or 'YYYY-MM'
         
-    period : {'D'}, default 'D'
+    period: {'D', 'M'}, default 'D'
         Data periodicity. Currently daily ('D') and monthly ('M') frequencies are supported.
 
     Returns
