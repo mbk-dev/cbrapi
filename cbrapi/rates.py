@@ -93,8 +93,7 @@ def get_ibor(
         - D1 : 1 day
         - D7 : 7 days
         - D30 : 30 days
-        - D180 : 180 days
-        - D360 : 360 days
+        - D90 : 90 days
 
         Rate types include:
         - MIBID_RUB : Moscow Interbank Bid Rate (RUB)
@@ -128,7 +127,6 @@ def get_ibor(
     data1 = guess_date(first_date, default_value="2013-09-13")
     data2 = guess_date(last_date, default_value=str(today))
     mkr_xml = cbr_client.service.MKR(data1, data2)
-
     try:
         df = pd.read_xml(mkr_xml, xpath=".//MKR")
     except ValueError:
@@ -138,8 +136,7 @@ def get_ibor(
         "d1": "D1",
         "d7": "D7",
         "d30": "D30",
-        "d180": "D180",
-        "d360": "D360",
+        "d90": "D90"
     }
 
     level_1_column_mapping = {
