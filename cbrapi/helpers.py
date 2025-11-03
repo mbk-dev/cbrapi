@@ -70,7 +70,7 @@ def unstack_groups(data, symbol):
 
     if symbol == "MKR":
         data = (
-            data.groupby([data.index, "p1"])[["d1", "d7", "d30", "d90", "d180", "d360"]]
+            data.groupby([data.index, "p1"])[["d1", "d7", "d30", "d90"]]
             .first()
             .unstack(level="p1")
         )
