@@ -55,7 +55,7 @@ def get_currency_code(ticker: str) -> str:
     Parameters
     ----------
     ticker : str
-        Currency ticker in format 'CCY1CCY2.CBR' (e.g., 'USDRUB.CBR')
+        Currency ticker in format 'CCY.CBR' (e.g., 'USD.CBR')
 
     Returns
     -------
@@ -74,7 +74,7 @@ def get_currency_code(ticker: str) -> str:
 
     Examples
     --------
-    >>> get_currency_code('USDRUB.CBR')
+    >>> get_currency_code('USD.CBR')
     'R01235'
     """
     cbr_symbol = ticker[:3]
@@ -100,7 +100,7 @@ def get_time_series(
     Parameters
     ----------
     symbol : str
-        Currency pair symbol in format 'CCY1CCY2.CBR' (e.g., 'USDRUB.CBR')
+        Currency pair symbol in format 'CCY.CBR' (e.g., 'USD.CBR')
         
     first_date : str
         Start date in format 'YYYY-MM-DD' or 'YYYY-MM'
@@ -132,8 +132,8 @@ def get_time_series(
 
     Examples
     --------
-    >>> get_time_series('USDRUB.CBR', '2023-01-01', '2023-12-31', 'D')
-    >>> get_time_series('EURUSD.CBR', '2023-01', '2023-12', 'M')
+    >>> get_time_series('USD.CBR', '2023-01-01', '2023-12-31', 'D')
+    >>> get_time_series('EUR.CBR', '2023-01', '2023-12', 'M')
     """
     try:
         data1 = datetime.strptime(first_date, "%Y-%m-%d")
