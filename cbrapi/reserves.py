@@ -78,4 +78,4 @@ def get_mrrf(
         data=df, period=period, symbol="mr", level_1=level_1_column_mapping
     )
 
-    return df
+    return df.loc[data1: data2]

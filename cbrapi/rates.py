@@ -61,7 +61,7 @@ def get_key_rate(
     df = normalize_data(
         data=df, period=period, symbol="KEY_RATE", level_1=level_1_column_mapping
     )
-    return df
+    return df.loc[data1: data2]
 
 
 def get_ibor(
@@ -165,4 +165,4 @@ def get_ibor(
         level_0=level_0_column_mapping,
         level_1=level_1_column_mapping,
     )
-    return df
+    return df.loc[data1: data2]
