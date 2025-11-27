@@ -10,6 +10,7 @@ from cbrapi.helpers import (
     guess_date,
     pad_missing_periods,
     calculate_inverse_rate,
+    check_symbol,
 )
 
 
@@ -101,13 +102,13 @@ def get_time_series(
     ----------
     symbol : str
         Currency pair symbol in format 'CCY.CBR' (e.g., 'USD.CBR')
-        
+
     first_date : str
         Start date in format 'YYYY-MM-DD' or 'YYYY-MM'
-        
+
     last_date : str
         End date in format 'YYYY-MM-DD' or 'YYYY-MM'
-        
+
     period: {'D', 'M'}, default 'D'
         Data periodicity. Currently daily ('D') and monthly ('M') frequencies are supported.
 
@@ -142,6 +143,7 @@ def get_time_series(
         data1 = datetime.strptime(first_date, "%Y-%m")
         data2 = datetime.strptime(last_date, "%Y-%m")
     symbol = symbol.upper()
+    check_symbol(symbol)
     if re.match("RUB", symbol):
         foreign_ccy = re.search(r"^RUB(.*).CBR$", symbol)[1]
         query_symbol = foreign_ccy + "RUB.CBR"
