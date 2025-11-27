@@ -8,6 +8,7 @@ from cbrapi.helpers import (
     calculate_inverse_rate,
     normalize_data,
     guess_date,
+    check_symbol,
 )
 from cbrapi.ruonia import (
     get_ruonia_ts,
