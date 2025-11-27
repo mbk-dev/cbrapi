@@ -68,4 +68,4 @@ def get_metals_prices(
     df = normalize_data(
         data=df, period=period, symbol="DrgMet", level_1=level_1_column_mapping
     )
-    return df.loc[data1: data2]
+    return df

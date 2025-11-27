@@ -133,7 +133,7 @@ def get_ruonia_index(
     df = normalize_data(
         data=df, period=period, symbol="ra", level_1=level_1_column_mapping
     )
-    return df.loc[data1: data2]
+    return df
 
 
 def get_ruonia_overnight(
@@ -190,7 +190,7 @@ def get_ruonia_overnight(
         data=df, period=period, symbol="ro", level_1=level_1_column_mapping
     )
     df /= 100
-    return df.loc[data1: data2]
+    return df
 
 
 def get_roisfix(
@@ -254,4 +254,4 @@ def get_roisfix(
     df = normalize_data(
         data=df, period=period, symbol="rf", level_1=level_1_column_mapping
     )
-    return df.loc[data1: data2]
+    return df
