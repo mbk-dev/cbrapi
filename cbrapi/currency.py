@@ -145,7 +145,7 @@ def get_time_series(
     symbol = symbol.upper()
 
     if re.match("RUB", symbol):
-        foreign_ccy = re.search(r"^RUB(.*).CBR$", symbol)[1]
+        foreign_ccy = re.search(r"^RUB(.*)$", symbol)[1]
         query_symbol = foreign_ccy + "RUB.CBR"
         method = "inverse"
     else:
