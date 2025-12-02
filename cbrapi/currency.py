@@ -143,7 +143,7 @@ def get_time_series(
         data1 = datetime.strptime(first_date, "%Y-%m")
         data2 = datetime.strptime(last_date, "%Y-%m")
     symbol = symbol.upper()
-    check_symbol(symbol)
+
     if re.match("RUB", symbol):
         foreign_ccy = re.search(r"^RUB(.*).CBR$", symbol)[1]
         query_symbol = foreign_ccy + "RUB.CBR"
@@ -151,6 +151,9 @@ def get_time_series(
     else:
         query_symbol = symbol
         method = "direct"
+    
+    check_symbol(symbol)    
+    
     code = get_currency_code(query_symbol)
     cbr_client = make_cbr_client()
     rate_xml = cbr_client.service.GetCursDynamic(data1, data2, code)
