@@ -151,11 +151,19 @@ def check_symbol(symbol):
     """
     Check symbol for currency.
     """
-    if symbol[:3] not in {s[:3] for s in cur_symbol_set}:
-        raise ValueError("This symbol does not exist.")
+    if len(symbol) == 10 and symbol.endswith('.CBR'):
+        currency_pair = symbol[:6]
+        first_currency = currency_pair[:3] + '.CBR'
+        second_currency = currency_pair[3:] + '.CBR'
+        
+        if first_currency in cur_symbol_set and second_currency in cur_symbol_set:
+            raise ValueError(f"Api doesnt support cross courses. Detected: {first_currency}/{second_currency}")
 
+    if symbol not in cur_symbol_set:
+        raise ValueError(f"API Central Bank doesnot support  this symbol: {symbol}.")         
 
 cur_symbol_set = [
+    "RUB.CBR",    
     "AUD.CBR",
     "ATS.CBR",
     "AZN.CBR",
