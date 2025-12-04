@@ -147,167 +147,36 @@ def guess_date(input_date, default_value):
     return date
 
 
-def check_symbol(symbol):
+def check_symbol(symbol, symbol_col):
     """
     Check symbol for currency.
     """
+
+    if "." in symbol:
+        raise ValueError("Currency symbols should not contain dots.")
+
+    if len(symbol) < 3 or len(symbol) > 6:
+        raise ValueError(
+            f"Symbol '{symbol}' has invalid length ({len(symbol)} characters). "
+            f"Currency symbols should be 3 characters (e.g., 'USD') or 6 characters for RUB pairs only (e.g., 'USDRUB', 'RUBUSD')."
+        )
+
     currency_pair = symbol[:6]
     first_currency = currency_pair[:3]
-    second_currency = currency_pair[3:]    
+    second_currency = currency_pair[3:]
+
     if len(symbol) == 6:
-        if first_currency != 'RUB':
-            if first_currency in cur_symbol_set and second_currency in cur_symbol_set:
-                raise ValueError(f"API does not support cross courses. Detected: {first_currency}/{second_currency}")
+        if "RUB" not in [first_currency, second_currency]:
+            if (
+                first_currency in symbol_col.values
+                and second_currency in symbol_col.values
+            ):
+                raise ValueError(
+                    f"API does not support cross courses. Detected: {first_currency}/{second_currency}"
+                )
 
-    if symbol not in cur_symbol_set and 'RUB' not in [first_currency, second_currency]:
-        raise ValueError(f"API Central Bank does not support  this symbol: {symbol}.")         
-
-cur_symbol_set = [  
-    "AUD",
-    "ATS",
-    "AZN",
-    "DZD",
-    "GBP",
-    "AON",
-    "AMD",
-    "BHD",
-    "BYR",
-    "BYN",
-    "BEF",
-    "BGN",
-    "BOB",
-    "BRL",
-    "HUF",
-    "VND",
-    "HKD",
-    "GRD",
-    "GEL",
-    "DKK",
-    "AED",
-    "USD",
-    "EUR",
-    "EGP",
-    "INR",
-    "IDR",
-    "IRR",
-    "IEP",
-    "ISK",
-    "ESP",
-    "ITL",
-    "KZT",
-    "CAD",
-    "QAR",
-    "KGS",
-    "CNY",
-    "KWD",
-    "CUP",
-    "LVL",
-    "LBP",
-    "LTL",
-    "MDL",
-    "MNT",
-    "DEM",
-    "DEM",
-    "NGN",
-    "NLG",
-    "NZD",
-    "NOK",
-    "OMR",
-    "PLN",
-    "PTE",
-    "SAR",
-    "SAR",
-    "ROL",
-    "RON",
-    "XDR",
-    "SGD",
-    "SRD",
-    "TJS",
-    "THB",
-    "BDT",
-    "TRY",
-    "TMM",
-    "TMT",
-    "UZS",
-    "UAH",
-    "FIM",
-    "FRF",
-    "CZK",
-    "SEK",
-    "CHF",
-    "XEU",
-    "EEK",
-    "ETB",
-    "YUN",
-    "RSD",
-    "ZAR",
-    "KRW",
-    "JPY",
-    "MMK",
-    "ALL",
-    "AOA",
-    "ARS",
-    "AFN",
-    "BWP",
-    "BND",
-    "BIF",
-    "VEF",
-    "KPW",
-    "GMD",
-    "GHS",
-    "GNF",
-    "ZWD",
-    "ZWN",
-    "ZRN",
-    "ZMK",
-    "ILS",
-    "JOD",
-    "IQD",
-    "YER",
-    "KES",
-    "CYP",
-    "COP",
-    "CDF",
-    "CRC",
-    "LAK",
-    "SLL",
-    "LYD",
-    "SZL",
-    "MUR",
-    "MRO",
-    "MKD",
-    "MWK",
-    "MGA",
-    "MYR",
-    "MTL",
-    "MAD",
-    "MXN",
-    "MZN",
-    "NPR",
-    "NIO",
-    "PKR",
-    "PYG",
-    "PEN",
-    "KHR",
-    "SCR",
-    "SYP",
-    "SKK",
-    "SIT",
-    "SOS",
-    "SDG",
-    "TJR",
-    "TWD",
-    "TZS",
-    "TND",
-    "UGX",
-    "UYU",
-    "PHP",
-    "DJF",
-    "XAF",
-    "XOF",
-    "HRK",
-    "CLP",
-    "LKR",
-    "ECS",
-    "NAD",
-]
+    if symbol not in symbol_col.values and "RUB" not in [
+        first_currency,
+        second_currency,
+    ]:
+        raise ValueError(f"API Central Bank does not support  this symbol: {symbol}.")
