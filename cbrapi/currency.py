@@ -78,8 +78,6 @@ def get_currency_code(ticker: str) -> str:
     >>> get_currency_code('USD')
     'R01235'
     """
-    if len(ticker) < 3 or len(ticker) > 3:
-        raise ValueError("Currency symbol should be 3 characters.")
     currencies_list = get_currencies_list()
     symbol_col = currencies_list["VcharCode"]
     check_symbol(ticker, symbol_col)
@@ -183,6 +181,6 @@ def get_time_series(
     s = pad_missing_periods(s, freq="D")
     s.index.rename("date", inplace=True)
     if period.upper() == "M":
-        s = s.resample("M").last()
+        s = s.to_timestamp().resample("ME").last()
     s = calculate_inverse_rate(s) if method == "inverse" else s
     return s.rename(symbol)
