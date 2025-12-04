@@ -78,13 +78,15 @@ def get_currency_code(ticker: str) -> str:
     >>> get_currency_code('USD')
     'R01235'
     """
-    cbr_symbol = ticker[:3]
+    if len(ticker) < 3 or len(ticker) > 3:
+        raise ValueError("Currency symbol should be 3 characters.")
     currencies_list = get_currencies_list()
+    symbol_col = currencies_list["VcharCode"]
+    check_symbol(ticker, symbol_col)
+
     # Some tickers has 2 Vcode in CBR database. ILS - "Израильский шекель" and "Новый израильский шекель"
     # First row is taken with .iloc
-    row = (
-        currencies_list[currencies_list["VcharCode"] == cbr_symbol].iloc[0, :].squeeze()
-    )
+    row = currencies_list[currencies_list["VcharCode"] == ticker].iloc[0, :].squeeze()
     try:
         code = row.loc["Vcode"]
     except KeyError as e:
@@ -146,14 +148,15 @@ def get_time_series(
 
     if re.match("RUB", symbol):
         foreign_ccy = re.search(r"^RUB(.*)$", symbol)[1]
-        query_symbol = foreign_ccy + "RUB.CBR"
+        query_symbol = foreign_ccy + "RUB"
         method = "inverse"
     else:
         query_symbol = symbol
         method = "direct"
-    
-    check_symbol(symbol)    
-    
+
+    symbol_col = get_currencies_list()["VcharCode"]
+    check_symbol(symbol, symbol_col)
+
     code = get_currency_code(query_symbol)
     cbr_client = make_cbr_client()
     rate_xml = cbr_client.service.GetCursDynamic(data1, data2, code)
