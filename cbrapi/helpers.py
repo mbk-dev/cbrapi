@@ -147,7 +147,25 @@ def guess_date(input_date, default_value):
     return date
 
 
-def check_symbol(symbol, symbol_col):
+def check_ticker_code(ticker, symbol_col):
+    """
+    Check ticker for currency.
+    """
+    if "." in ticker:
+        raise ValueError("Currency ticker should not contain dots.")
+
+    if (len(ticker) < 3 or len(ticker) > 3) and "RUB" not in ticker:
+        raise ValueError(f"Currency ticker should be 3 characters (e.g., 'USD').")
+
+    ticker = ticker[:3]
+
+    if ticker not in symbol_col.values:
+        raise ValueError(f"API Central Bank does not support  this ticker: {ticker}.")
+
+    return ticker
+
+
+def check_symbol_ts(symbol, symbol_col):
     """
     Check symbol for currency.
     """
