@@ -10,7 +10,8 @@ from cbrapi.helpers import (
     guess_date,
     pad_missing_periods,
     calculate_inverse_rate,
-    check_symbol,
+    check_ticker_code,
+    check_symbol_ts,
 )
 
 
@@ -78,9 +79,11 @@ def get_currency_code(ticker: str) -> str:
     >>> get_currency_code('USD')
     'R01235'
     """
-    currencies_list = get_currencies_list()
-    symbol_col = currencies_list["VcharCode"]
-    check_symbol(ticker, symbol_col)
+    currencies_list, symbol_col = (
+        get_currencies_list(),
+        get_currencies_list()["VcharCode"],
+    )
+    ticker = check_ticker_code(ticker, symbol_col)
 
     # Some tickers has 2 Vcode in CBR database. ILS - "Израильский шекель" and "Новый израильский шекель"
     # First row is taken with .iloc
@@ -153,7 +156,7 @@ def get_time_series(
         method = "direct"
 
     symbol_col = get_currencies_list()["VcharCode"]
-    check_symbol(symbol, symbol_col)
+    check_symbol_ts(symbol, symbol_col)
 
     code = get_currency_code(query_symbol)
     cbr_client = make_cbr_client()
