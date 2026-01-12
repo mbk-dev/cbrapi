@@ -149,7 +149,7 @@ def get_time_series(
 
     if re.match("RUB", symbol):
         foreign_ccy = re.search(r"^RUB(.*)$", symbol)[1]
-        query_symbol = foreign_ccy + "RUB"
+        query_symbol = foreign_ccy
         method = "inverse"
     else:
         query_symbol = symbol
@@ -164,7 +164,7 @@ def get_time_series(
     try:
         df = pd.read_xml(rate_xml, xpath="//ValuteCursDynamic")
     except ValueError:
-        return pd.Series()
+        return pd.Series(dtype=float)
     cbr_cols1 = {"rowOrder", "id", "Vnom", "Vcode", "CursDate", "Vcurs"}
     cbr_cols2 = cbr_cols1.union({"VunitRate"})
     if set(df.columns) not in [cbr_cols1, cbr_cols2]:
@@ -181,7 +181,10 @@ def get_time_series(
     df.set_index("CursDate", inplace=True, verify_integrity=True)
     df.sort_index(ascending=True, inplace=True)
     s = df.squeeze(axis=1)  # all outputs must be pd.Series
-    s = pad_missing_periods(s, freq="D")
+    pad_end_date = data2.date()
+    if data1.date() < today < data2.date():
+        pad_end_date = today
+    s = pad_missing_periods(s, freq="D", end_date=pad_end_date)
     s.index.rename("date", inplace=True)
     if period.upper() == "M":
         s = s.to_timestamp().resample("ME").last()

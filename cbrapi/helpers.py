@@ -1,21 +1,28 @@
-from typing import Union
+from typing import Union, Optional
 from datetime import datetime, date
 import pandas as pd
 
 
 def pad_missing_periods(
-    ts: Union[pd.Series, pd.DataFrame], freq: str = "D"
+    ts: Union[pd.Series, pd.DataFrame], freq: str = "D", end_date: Optional[date] = None
 ) -> Union[pd.Series, pd.DataFrame]:
     """
     Pad missing dates and values in the time series.
     """
+    if ts.empty:
+        return ts
     name = ts.index.name
     if not isinstance(ts.index, pd.PeriodIndex):
         ts.index = ts.index.to_period(freq)
     ts.sort_index(
         ascending=True, inplace=True
     )  # The order should be ascending to make new Period index
-    idx = pd.period_range(start=ts.index[0], end=ts.index[-1], freq=freq)
+    end = ts.index[-1]
+    if end_date:
+        end_period = pd.Period(end_date, freq=freq)
+        if end_period > end:
+            end = end_period
+    idx = pd.period_range(start=ts.index[0], end=end, freq=freq)
     ts = ts.reindex(idx, method="pad")
     ts.index.rename(name, inplace=True)
     return ts

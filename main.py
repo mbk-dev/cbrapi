@@ -12,7 +12,7 @@ print(cbr.currency.get_currency_code("USDRUB"))
 
 print(
     cbr.currency.get_time_series(
-        symbol="USDRUB", first_date="2019-01-01", last_date="2020-12-31", period="M"
+        symbol="USDRUB", first_date="2025-12-01", last_date="2026-01-31", period="D"
     )
 )
 
@@ -30,4 +30,4 @@ print(cbr.get_roisfix())
 
 print(cbr.get_currencies_list())
 
-print(cbr.get_currency_code("USDRUB.CBR"))
+print(cbr.get_currency_code("USDRUB"))
