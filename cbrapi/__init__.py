@@ -22,4 +22,4 @@ from cbrapi.metals import get_metals_prices
 from cbrapi.reserves import get_mrrf
 
 
-# __version__ = version("cbr")
+__version__ = version("cbrapi")

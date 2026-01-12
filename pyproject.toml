@@ -1,12 +1,13 @@
 [tool.poetry]
 name = "cbrapi"
-version = "0.1.5"
+version = "0.1.6"
 description = "Python interface for Central Bank of Russia (CBR) API"
 authors = [
     "AAARRRT <artiomsalazov@gmail.com>",
     "MBK Development LLC <info@rostsber.ru>"
 ]
 readme = "README.md"
+package-mode = true
 
 [tool.poetry.dependencies]
 python = ">=3.10,<4.0.0"
@@ -14,9 +15,14 @@ pandas = "^2.3.2"
 requests = "*"
 suds-py3 = "*"
 lxml = "*"
+ipykernel = "^7.1.0"
 
 [tool.poetry.group.dev.dependencies]
-black = "^25.1.0"
+black = "*"
+flake8 = "*"
+pytest = "*"
+pytest-mock = "*"
+scipy-stubs = "*"  # for typehints
 
 [build-system]
 requires = ["poetry-core"]
