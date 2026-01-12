@@ -162,7 +162,7 @@ def check_ticker_code(ticker, symbol_col):
         raise ValueError("Currency ticker should not contain dots.")
 
     if (len(ticker) < 3 or len(ticker) > 3) and "RUB" not in ticker:
-        raise ValueError(f"Currency ticker should be 3 characters (e.g., 'USD').")
+        raise ValueError("Currency ticker should be 3 characters (e.g., 'USD').")
 
     ticker = ticker[:3]
 

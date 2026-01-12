@@ -31,3 +31,5 @@ print(cbr.get_roisfix())
 print(cbr.get_currencies_list())
 
 print(cbr.get_currency_code("USDRUB"))
+
+print(cbr.__version__)

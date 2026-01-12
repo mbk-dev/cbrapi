@@ -1,13 +1,10 @@
 import re
 from datetime import datetime, date
-from typing import Optional
 
 import pandas as pd
 
 from cbrapi.cbr_settings import make_cbr_client
 from cbrapi.helpers import (
-    normalize_data,
-    guess_date,
     pad_missing_periods,
     calculate_inverse_rate,
     check_ticker_code,

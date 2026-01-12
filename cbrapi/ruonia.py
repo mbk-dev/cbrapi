@@ -1,4 +1,4 @@
-from datetime import datetime, date
+from datetime import date
 from typing import Optional
 
 import pandas as pd
@@ -56,7 +56,6 @@ def get_ruonia_ts(
     >>> get_ruonia_ts('RUONIA.INDX', '2023-01-01', '2023-12-31')
     >>> get_ruonia_ts('RUONIA_AVG_3M.RATE')
     """
-    cbr_client = make_cbr_client()
     if symbol in [
         "RUONIA.INDX",
         "RUONIA_AVG_1M.RATE",
