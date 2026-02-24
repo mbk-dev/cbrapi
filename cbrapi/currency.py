@@ -1,5 +1,6 @@
 import re
 from datetime import datetime, date
+from io import BytesIO
 
 import pandas as pd
 
@@ -39,7 +40,7 @@ def get_currencies_list() -> pd.DataFrame:
     cbr_client = make_cbr_client()
     # get currency table with DAILY time series
     currencies_daily_xml = cbr_client.service.EnumValutesXML(False)
-    df_daily = pd.read_xml(currencies_daily_xml, xpath="//EnumValutes")
+    df_daily = pd.read_xml(BytesIO(currencies_daily_xml), xpath="//EnumValutes")
 
     # get currency table with MONTHLY time series
     currencies_monthly_xml = cbr_client.service.EnumValutesXML(True)
