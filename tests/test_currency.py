@@ -4,7 +4,6 @@ from unittest.mock import MagicMock
 
 from cbrapi.currency import get_currencies_list, get_currency_code, get_time_series
 
-
 # XML returned by EnumValutesXML — must be bytes (used with BytesIO for daily)
 CURRENCIES_XML = b"""<?xml version="1.0" encoding="utf-8"?>
 <ValuteData>

@@ -13,7 +13,6 @@ from cbrapi.helpers import (
     check_symbol_ts,
 )
 
-
 today = date.today()
 
 

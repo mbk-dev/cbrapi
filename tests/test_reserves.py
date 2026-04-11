@@ -4,7 +4,6 @@ from unittest.mock import MagicMock
 
 from cbrapi.reserves import get_mrrf
 
-
 # One row per date; columns p1-p6 hold reserve components
 MRRF_XML = """<?xml version="1.0" encoding="utf-8"?>
 <root>

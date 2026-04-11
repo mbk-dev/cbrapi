@@ -6,7 +6,6 @@ import pandas as pd
 from cbrapi.cbr_settings import make_cbr_client
 from cbrapi.helpers import normalize_data, guess_date
 
-
 today = date.today()
 
 

@@ -15,7 +15,6 @@ from cbrapi.helpers import (
     check_symbol_ts,
 )
 
-
 # ---------------------------------------------------------------------------
 # pad_missing_periods
 # ---------------------------------------------------------------------------
@@ -85,7 +84,9 @@ class TestCalculateInverseRate:
 
 class TestSetDatetimeIndex:
     def test_converts_datemet_column(self):
-        df = pd.DataFrame({"DateMet": ["2023-01-01T00:00:00", "2023-01-02T00:00:00"], "val": [1, 2]})
+        df = pd.DataFrame(
+            {"DateMet": ["2023-01-01T00:00:00", "2023-01-02T00:00:00"], "val": [1, 2]}
+        )
         result = set_datetime_index(df)
         assert isinstance(result.index, pd.DatetimeIndex)
         assert "DateMet" not in result.columns
@@ -109,7 +110,15 @@ class TestSetDatetimeIndex:
 
 class TestRemoveUnnecessaryColumns:
     def test_removes_known_columns(self):
-        df = pd.DataFrame({"id": [1], "rowOrder": [0], "vol": [0], "DateUpdate": ["x"], "value": [1.0]})
+        df = pd.DataFrame(
+            {
+                "id": [1],
+                "rowOrder": [0],
+                "vol": [0],
+                "DateUpdate": ["x"],
+                "value": [1.0],
+            }
+        )
         result = remove_unnecessary_columns(df)
         assert list(result.columns) == ["value"]
 
@@ -185,7 +194,9 @@ class TestColumnRename:
         tuples = list(zip(*arrays))
         idx = pd.MultiIndex.from_tuples(tuples)
         df = pd.DataFrame([[1, 2]], columns=idx)
-        result = column_rename(df, level_0=None, level_1={"1": "MIBID_RUB", "2": "MIBOR_RUB"})
+        result = column_rename(
+            df, level_0=None, level_1={"1": "MIBID_RUB", "2": "MIBOR_RUB"}
+        )
         assert "MIBID_RUB" in result.columns.get_level_values(1)
 
 

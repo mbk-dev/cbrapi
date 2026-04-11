@@ -4,7 +4,6 @@ from unittest.mock import MagicMock
 
 from cbrapi.rates import get_key_rate, get_ibor
 
-
 KEY_RATE_XML = """<?xml version="1.0" encoding="utf-8"?>
 <root>
   <KR>

@@ -4,7 +4,6 @@ from unittest.mock import MagicMock
 
 from cbrapi.metals import get_metals_prices
 
-
 # One row per (date, metal). CodMet: 1=GOLD 2=SILVER 3=PLATINUM 4=PALLADIUM
 METALS_XML = """<?xml version="1.0" encoding="utf-8"?>
 <root>

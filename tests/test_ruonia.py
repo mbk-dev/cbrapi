@@ -9,7 +9,6 @@ from cbrapi.ruonia import (
     get_ruonia_ts,
 )
 
-
 RUONIA_OVERNIGHT_XML = """<?xml version="1.0" encoding="utf-8"?>
 <root>
   <ro>

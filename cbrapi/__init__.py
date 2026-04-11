@@ -21,5 +21,4 @@ from cbrapi.rates import get_key_rate, get_ibor
 from cbrapi.metals import get_metals_prices
 from cbrapi.reserves import get_mrrf
 
-
 __version__ = version("cbrapi")
