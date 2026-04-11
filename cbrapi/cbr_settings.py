@@ -1,7 +1,10 @@
+from functools import lru_cache
+
 from suds.client import Client
 from suds.xsd.doctor import Import, ImportDoctor
 
 
+@lru_cache(maxsize=1)
 def make_cbr_client():
     imp = Import("http://www.w3.org/2001/XMLSchema")  # the schema to import
     imp.filter.add("http://web.cbr.ru/")  # the schema to import into

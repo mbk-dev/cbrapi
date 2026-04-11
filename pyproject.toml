@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cbrapi"
-version = "0.1.6"
+version = "0.1.7"
 description = "Python interface for Central Bank of Russia (CBR) API"
 authors = [
     "AAARRRT <artiomsalazov@gmail.com>",
@@ -15,7 +15,7 @@ pandas = "^2.3.2"
 requests = "*"
 suds-py3 = "*"
 lxml = "*"
-ipykernel = "^7.1.0"
+ipykernel = "*"
 
 [tool.poetry.group.dev.dependencies]
 black = "*"

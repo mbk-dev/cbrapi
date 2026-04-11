@@ -1,5 +1,6 @@
 import re
 from datetime import datetime, date
+from functools import lru_cache
 from io import BytesIO
 
 import pandas as pd
@@ -16,6 +17,7 @@ from cbrapi.helpers import (
 today = date.today()
 
 
+@lru_cache(maxsize=1)
 def get_currencies_list() -> pd.DataFrame:
     """
     Get a list of available currencies from CBR.
@@ -77,10 +79,8 @@ def get_currency_code(ticker: str) -> str:
     >>> get_currency_code('USD')
     'R01235'
     """
-    currencies_list, symbol_col = (
-        get_currencies_list(),
-        get_currencies_list()["VcharCode"],
-    )
+    currencies_list = get_currencies_list()
+    symbol_col = currencies_list["VcharCode"]
     ticker = check_ticker_code(ticker, symbol_col)
 
     # Some tickers has 2 Vcode in CBR database. ILS - "Израильский шекель" and "Новый израильский шекель"
