@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 from cbrapi.rates import get_key_rate, get_ibor
 
-KEY_RATE_XML = """<?xml version="1.0" encoding="utf-8"?>
+KEY_RATE_XML = b"""<?xml version="1.0" encoding="utf-8"?>
 <root>
   <KR>
     <DateMet>2023-01-01T00:00:00</DateMet>
@@ -23,7 +23,7 @@ KEY_RATE_XML = """<?xml version="1.0" encoding="utf-8"?>
 </root>"""
 
 # One row per (date, p1). Uses p1 as the rate-type code.
-IBOR_XML = """<?xml version="1.0" encoding="utf-8"?>
+IBOR_XML = b"""<?xml version="1.0" encoding="utf-8"?>
 <root>
   <MKR>
     <DateMet>2023-01-31T00:00:00</DateMet>
@@ -71,7 +71,7 @@ IBOR_XML = """<?xml version="1.0" encoding="utf-8"?>
   </MKR>
 </root>"""
 
-EMPTY_XML = "<?xml version='1.0'?><root/>"
+EMPTY_XML = b"<?xml version='1.0'?><root/>"
 
 
 # ---------------------------------------------------------------------------

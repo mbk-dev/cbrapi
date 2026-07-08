@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 from cbrapi.metals import get_metals_prices
 
 # One row per (date, metal). CodMet: 1=GOLD 2=SILVER 3=PLATINUM 4=PALLADIUM
-METALS_XML = """<?xml version="1.0" encoding="utf-8"?>
+METALS_XML = b"""<?xml version="1.0" encoding="utf-8"?>
 <root>
   <DrgMet>
     <DateMet>2023-01-03T00:00:00</DateMet>
@@ -73,7 +73,7 @@ METALS_XML = """<?xml version="1.0" encoding="utf-8"?>
   </DrgMet>
 </root>"""
 
-EMPTY_XML = "<?xml version='1.0'?><root/>"
+EMPTY_XML = b"<?xml version='1.0'?><root/>"
 
 
 def _make_mock_client(xml=METALS_XML):

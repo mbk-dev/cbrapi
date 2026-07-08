@@ -22,7 +22,7 @@ CURRENCIES_XML = b"""<?xml version="1.0" encoding="utf-8"?>
 </ValuteData>"""
 
 # XML returned by GetCursDynamic — must have exactly: rowOrder, id, Vnom, Vcode, CursDate, Vcurs
-RATES_XML = """<?xml version="1.0" encoding="utf-8"?>
+RATES_XML = b"""<?xml version="1.0" encoding="utf-8"?>
 <ValuteData>
   <ValuteCursDynamic>
     <rowOrder>0</rowOrder>
@@ -170,7 +170,7 @@ class TestGetTimeSeries:
         assert result.empty
 
     def test_unexpected_columns_raise(self, mocker, currencies_df):
-        bad_xml = """<?xml version="1.0"?>
+        bad_xml = b"""<?xml version="1.0"?>
         <ValuteData>
           <ValuteCursDynamic>
             <unexpected_col>foo</unexpected_col>

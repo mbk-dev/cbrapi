@@ -45,8 +45,8 @@ def get_currencies_list() -> pd.DataFrame:
 
     # get currency table with MONTHLY time series
     currencies_monthly_xml = cbr_client.service.EnumValutesXML(True)
-    df_monthly = pd.read_xml(currencies_monthly_xml, xpath="//EnumValutes")
-    return pd.concat([df_daily, df_monthly], axis=0, join="outer", copy="false")
+    df_monthly = pd.read_xml(BytesIO(currencies_monthly_xml), xpath="//EnumValutes")
+    return pd.concat([df_daily, df_monthly], axis=0, join="outer")
 
 
 def get_currency_code(ticker: str) -> str:
@@ -92,9 +92,7 @@ def get_currency_code(ticker: str) -> str:
     return code
 
 
-def get_time_series(
-    symbol: str, first_date: str, last_date: str, period: str = "D"
-) -> pd.Series:
+def get_time_series(symbol: str, first_date: str, last_date: str, period: str = "D") -> pd.Series:
     """
     Get currency rate historical data from CBR.
 
@@ -159,23 +157,23 @@ def get_time_series(
     cbr_client = make_cbr_client()
     rate_xml = cbr_client.service.GetCursDynamic(data1, data2, code)
     try:
-        df = pd.read_xml(rate_xml, xpath="//ValuteCursDynamic")
+        df = pd.read_xml(BytesIO(rate_xml), xpath="//ValuteCursDynamic")
     except ValueError:
         return pd.Series(dtype=float)
     cbr_cols1 = {"rowOrder", "id", "Vnom", "Vcode", "CursDate", "Vcurs"}
     cbr_cols2 = cbr_cols1.union({"VunitRate"})
     if set(df.columns) not in [cbr_cols1, cbr_cols2]:
-        raise ValueError(
-            "CBR data has different columns. Probably data format is changed."
-        )
+        raise ValueError("CBR data has different columns. Probably data format is changed.")
     df.drop(columns=["id", "rowOrder", "Vcode"], inplace=True)
     if "VunitRate" in list(df.columns):
         df.drop(columns=["VunitRate"], inplace=True)
     df["Vcurs"] /= df["Vnom"]
     df.drop(columns=["Vnom"], inplace=True)
-    df = df.astype({"CursDate": "period[D]"}, copy=False)
-    df = df.astype({"Vcurs": "float"}, copy=False)
-    df.set_index("CursDate", inplace=True, verify_integrity=True)
+    df = df.astype({"CursDate": "period[D]"})
+    df = df.astype({"Vcurs": "float"})
+    df.set_index("CursDate", inplace=True)
+    if not df.index.is_unique:
+        raise ValueError("CBR returned duplicate dates. Probably data format is changed.")
     df.sort_index(ascending=True, inplace=True)
     s = df.squeeze(axis=1)  # all outputs must be pd.Series
     pad_end_date = data2.date()

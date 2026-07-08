@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 from cbrapi.reserves import get_mrrf
 
 # One row per date; columns p1-p6 hold reserve components
-MRRF_XML = """<?xml version="1.0" encoding="utf-8"?>
+MRRF_XML = b"""<?xml version="1.0" encoding="utf-8"?>
 <root>
   <mr>
     <DateMet>2023-01-31T00:00:00</DateMet>
@@ -35,7 +35,7 @@ MRRF_XML = """<?xml version="1.0" encoding="utf-8"?>
   </mr>
 </root>"""
 
-EMPTY_XML = "<?xml version='1.0'?><root/>"
+EMPTY_XML = b"<?xml version='1.0'?><root/>"
 
 
 class TestGetMrrf:

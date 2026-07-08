@@ -9,7 +9,7 @@ from cbrapi.ruonia import (
     get_ruonia_ts,
 )
 
-RUONIA_OVERNIGHT_XML = """<?xml version="1.0" encoding="utf-8"?>
+RUONIA_OVERNIGHT_XML = b"""<?xml version="1.0" encoding="utf-8"?>
 <root>
   <ro>
     <DateMet>2023-01-03T00:00:00</DateMet>
@@ -27,7 +27,7 @@ RUONIA_OVERNIGHT_XML = """<?xml version="1.0" encoding="utf-8"?>
   </ro>
 </root>"""
 
-RUONIA_INDEX_XML = """<?xml version="1.0" encoding="utf-8"?>
+RUONIA_INDEX_XML = b"""<?xml version="1.0" encoding="utf-8"?>
 <root>
   <ra>
     <DateMet>2023-01-03T00:00:00</DateMet>
@@ -51,7 +51,7 @@ RUONIA_INDEX_XML = """<?xml version="1.0" encoding="utf-8"?>
   </ra>
 </root>"""
 
-ROISFIX_XML = """<?xml version="1.0" encoding="utf-8"?>
+ROISFIX_XML = b"""<?xml version="1.0" encoding="utf-8"?>
 <root>
   <rf>
     <DateMet>2023-01-03T00:00:00</DateMet>
@@ -79,7 +79,7 @@ ROISFIX_XML = """<?xml version="1.0" encoding="utf-8"?>
   </rf>
 </root>"""
 
-EMPTY_XML = "<?xml version='1.0'?><root/>"
+EMPTY_XML = b"<?xml version='1.0'?><root/>"
 
 
 # ---------------------------------------------------------------------------
@@ -120,7 +120,7 @@ class TestGetRuoniaOvernight:
         assert len(result) >= 8  # 2023-01-03 to 2023-01-10 padded
 
     def test_monthly_period(self, mocker):
-        two_month_xml = """<?xml version="1.0" encoding="utf-8"?>
+        two_month_xml = b"""<?xml version="1.0" encoding="utf-8"?>
 <root>
   <ro><DateMet>2023-01-03T00:00:00</DateMet><ruo>7.50</ruo><id>1</id><rowOrder>0</rowOrder><vol>0</vol></ro>
   <ro><DateMet>2023-02-03T00:00:00</DateMet><ruo>7.60</ruo><id>2</id><rowOrder>1</rowOrder><vol>0</vol></ro>

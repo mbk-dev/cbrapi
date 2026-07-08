@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Optional
+from io import BytesIO
 
 import pandas as pd
 
@@ -9,9 +9,7 @@ from cbrapi.helpers import normalize_data, guess_date
 today = date.today()
 
 
-def get_key_rate(
-    first_date: Optional[str] = None, last_date: Optional[str] = None, period: str = "D"
-) -> pd.Series:
+def get_key_rate(first_date: str | None = None, last_date: str | None = None, period: str = "D") -> pd.Series:
     """
     Get the key rate time series from CBR.
 
@@ -51,21 +49,17 @@ def get_key_rate(
     key_rate_xml = cbr_client.service.KeyRate(data1, data2)
 
     try:
-        df = pd.read_xml(key_rate_xml, xpath=".//KR")
+        df = pd.read_xml(BytesIO(key_rate_xml), xpath=".//KR")
     except ValueError:
         return pd.Series()
 
     level_1_column_mapping = {"Rate": "KEY_RATE"}
 
-    df = normalize_data(
-        data=df, period=period, symbol="KEY_RATE", level_1=level_1_column_mapping
-    )
+    df = normalize_data(data=df, period=period, symbol="KEY_RATE", level_1=level_1_column_mapping)
     return df
 
 
-def get_ibor(
-    first_date: Optional[str] = None, last_date: Optional[str] = None, period: str = "M"
-) -> pd.DataFrame:
+def get_ibor(first_date: str | None = None, last_date: str | None = None, period: str = "M") -> pd.DataFrame:
     """
     Get Interbank Offered Rate and related interbank rates from CBR.
 
@@ -127,7 +121,7 @@ def get_ibor(
     data2 = guess_date(last_date, default_value=str(today))
     mkr_xml = cbr_client.service.MKR(data1, data2)
     try:
-        df = pd.read_xml(mkr_xml, xpath=".//MKR")
+        df = pd.read_xml(BytesIO(mkr_xml), xpath=".//MKR")
     except ValueError:
         return pd.Series()
 

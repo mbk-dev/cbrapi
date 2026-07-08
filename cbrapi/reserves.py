@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Optional
+from io import BytesIO
 
 import pandas as pd
 
@@ -9,9 +9,7 @@ from cbrapi.helpers import normalize_data, guess_date
 today = date.today()
 
 
-def get_mrrf(
-    first_date: Optional[str] = None, last_date: Optional[str] = None, period: str = "M"
-) -> pd.DataFrame:
+def get_mrrf(first_date: str | None = None, last_date: str | None = None, period: str = "M") -> pd.DataFrame:
     """
     Get International Reserves and Foreign Currency Liquidity data from CBR.
 
@@ -60,7 +58,7 @@ def get_mrrf(
     mrrf_xml = cbr_client.service.mrrf(data1, data2)
 
     try:
-        df = pd.read_xml(mrrf_xml, xpath=".//mr")
+        df = pd.read_xml(BytesIO(mrrf_xml), xpath=".//mr")
     except ValueError:
         return pd.Series()
 
@@ -73,8 +71,6 @@ def get_mrrf(
         "p6": "MONETARY_GOLD",
     }
 
-    df = normalize_data(
-        data=df, period=period, symbol="mr", level_1=level_1_column_mapping
-    )
+    df = normalize_data(data=df, period=period, symbol="mr", level_1=level_1_column_mapping)
 
     return df

@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Optional
+from io import BytesIO
 
 import pandas as pd
 
@@ -11,8 +11,8 @@ today = date.today()
 
 def get_ruonia_ts(
     symbol: str,
-    first_date: Optional[str] = None,
-    last_date: Optional[str] = None,
+    first_date: str | None = None,
+    last_date: str | None = None,
     period: str = "D",
 ) -> pd.Series:
     """
@@ -61,9 +61,7 @@ def get_ruonia_ts(
         "RUONIA_AVG_3M.RATE",
         "RUONIA_AVG_6M.RATE",
     ]:
-        ticker = (
-            symbol.split(".")[0] if symbol.split(".")[1] == "RATE" else "RUONIA_INDEX"
-        )
+        ticker = symbol.split(".")[0] if symbol.split(".")[1] == "RATE" else "RUONIA_INDEX"
         df = get_ruonia_index(first_date, last_date).loc[:, ticker]
         if symbol != "RUONIA.INDX":
             df /= 100
@@ -72,9 +70,7 @@ def get_ruonia_ts(
         return get_ruonia_overnight(first_date, last_date, period)
 
 
-def get_ruonia_index(
-    first_date: Optional[str] = None, last_date: Optional[str] = None, period: str = "D"
-) -> pd.DataFrame:
+def get_ruonia_index(first_date: str | None = None, last_date: str | None = None, period: str = "D") -> pd.DataFrame:
     """
     Get RUONIA index and averages time series from CBR.
 
@@ -117,7 +113,7 @@ def get_ruonia_index(
     ruonia_index_xml = cbr_client.service.RuoniaSV(data1, data2)
 
     try:
-        df = pd.read_xml(ruonia_index_xml, xpath=".//ra")
+        df = pd.read_xml(BytesIO(ruonia_index_xml), xpath=".//ra")
     except ValueError:
         return pd.Series()
 
@@ -128,15 +124,11 @@ def get_ruonia_index(
         "R1M": "RUONIA_AVG_6M",
     }
 
-    df = normalize_data(
-        data=df, period=period, symbol="ra", level_1=level_1_column_mapping
-    )
+    df = normalize_data(data=df, period=period, symbol="ra", level_1=level_1_column_mapping)
     return df
 
 
-def get_ruonia_overnight(
-    first_date: Optional[str] = None, last_date: Optional[str] = None, period: str = "D"
-) -> pd.Series:
+def get_ruonia_overnight(first_date: str | None = None, last_date: str | None = None, period: str = "D") -> pd.Series:
     """
     Get RUONIA overnight value time series from CBR.
 
@@ -176,7 +168,7 @@ def get_ruonia_overnight(
     ruonia_overnight_xml = cbr_client.service.Ruonia(data1, data2)
 
     try:
-        df = pd.read_xml(ruonia_overnight_xml, xpath="//ro")
+        df = pd.read_xml(BytesIO(ruonia_overnight_xml), xpath="//ro")
     except ValueError:
         return pd.Series()
 
@@ -184,16 +176,12 @@ def get_ruonia_overnight(
         "ruo": "RUONIA_OVERNIGHT",
     }
 
-    df = normalize_data(
-        data=df, period=period, symbol="ro", level_1=level_1_column_mapping
-    )
+    df = normalize_data(data=df, period=period, symbol="ro", level_1=level_1_column_mapping)
     df /= 100
     return df
 
 
-def get_roisfix(
-    first_date: Optional[str] = None, last_date: Optional[str] = None, period: str = "D"
-) -> pd.DataFrame:
+def get_roisfix(first_date: str | None = None, last_date: str | None = None, period: str = "D") -> pd.DataFrame:
     """
     Get ROISfix (Ruble Overnight Index Swap Fixing) time series from CBR.
 
@@ -236,7 +224,7 @@ def get_roisfix(
     roisfix_xml = cbr_client.service.ROISfix(data1, data2)
 
     try:
-        df = pd.read_xml(roisfix_xml, xpath=".//rf")
+        df = pd.read_xml(BytesIO(roisfix_xml), xpath=".//rf")
     except ValueError:
         return pd.Series()
 
@@ -249,7 +237,5 @@ def get_roisfix(
         "R6M": "RATE_6_MONTH",
     }
 
-    df = normalize_data(
-        data=df, period=period, symbol="rf", level_1=level_1_column_mapping
-    )
+    df = normalize_data(data=df, period=period, symbol="rf", level_1=level_1_column_mapping)
     return df

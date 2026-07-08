@@ -1,11 +1,10 @@
-from typing import Union, Optional
 from datetime import datetime, date
 import pandas as pd
 
 
 def pad_missing_periods(
-    ts: Union[pd.Series, pd.DataFrame], freq: str = "D", end_date: Optional[date] = None
-) -> Union[pd.Series, pd.DataFrame]:
+    ts: pd.Series | pd.DataFrame, freq: str = "D", end_date: date | None = None
+) -> pd.Series | pd.DataFrame:
     """
     Pad missing dates and values in the time series.
     """
@@ -14,9 +13,7 @@ def pad_missing_periods(
     name = ts.index.name
     if not isinstance(ts.index, pd.PeriodIndex):
         ts.index = ts.index.to_period(freq)
-    ts.sort_index(
-        ascending=True, inplace=True
-    )  # The order should be ascending to make new Period index
+    ts.sort_index(ascending=True, inplace=True)  # The order should be ascending to make new Period index
     end = ts.index[-1]
     if end_date:
         end_period = pd.Period(end_date, freq=freq)
@@ -42,7 +39,7 @@ def set_datetime_index(data):
     if not isinstance(data.index, pd.DatetimeIndex):
         for col in data.columns:
             if any(keyword in str(col) for keyword in ["CDate", "DateMet", "D0", "DT"]):
-                if data[col].dtype == "object":
+                if pd.api.types.is_string_dtype(data[col]):
                     data[col] = data[col].str.split("T").str[0]
 
                 data.index = pd.to_datetime(data[col], utc=False)
@@ -57,11 +54,7 @@ def remove_unnecessary_columns(data):
     Remove unnecessary columns from DataFrame.
     """
     data.drop(
-        columns=[
-            col
-            for col in ["id", "rowOrder", "vol", "DateUpdate"]
-            if col in data.columns
-        ],
+        columns=[col for col in ["id", "rowOrder", "vol", "DateUpdate"] if col in data.columns],
         inplace=True,
     )
     return data
@@ -76,11 +69,7 @@ def unstack_groups(data, symbol):
         data.columns.name = None
 
     if symbol == "MKR":
-        data = (
-            data.groupby([data.index, "p1"])[["d1", "d7", "d30", "d90"]]
-            .first()
-            .unstack(level="p1")
-        )
+        data = data.groupby([data.index, "p1"])[["d1", "d7", "d30", "d90"]].first().unstack(level="p1")
         data.columns = data.columns.rename(None, level=1)
         data.columns.name = None
 
@@ -192,13 +181,8 @@ def check_symbol_ts(symbol, symbol_col):
 
     if len(symbol) == 6:
         if "RUB" not in [first_currency, second_currency]:
-            if (
-                first_currency in symbol_col.values
-                and second_currency in symbol_col.values
-            ):
-                raise ValueError(
-                    f"API does not support cross courses. Detected: {first_currency}/{second_currency}"
-                )
+            if first_currency in symbol_col.values and second_currency in symbol_col.values:
+                raise ValueError(f"API does not support cross courses. Detected: {first_currency}/{second_currency}")
 
     if symbol not in symbol_col.values and "RUB" not in [
         first_currency,

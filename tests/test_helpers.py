@@ -9,7 +9,6 @@ from cbrapi.helpers import (
     remove_unnecessary_columns,
     unstack_groups,
     column_rename,
-    normalize_data,
     guess_date,
     check_ticker_code,
     check_symbol_ts,
@@ -84,9 +83,7 @@ class TestCalculateInverseRate:
 
 class TestSetDatetimeIndex:
     def test_converts_datemet_column(self):
-        df = pd.DataFrame(
-            {"DateMet": ["2023-01-01T00:00:00", "2023-01-02T00:00:00"], "val": [1, 2]}
-        )
+        df = pd.DataFrame({"DateMet": ["2023-01-01T00:00:00", "2023-01-02T00:00:00"], "val": [1, 2]})
         result = set_datetime_index(df)
         assert isinstance(result.index, pd.DatetimeIndex)
         assert "DateMet" not in result.columns
@@ -183,7 +180,7 @@ class TestColumnRename:
 
     def test_renames_multiindex_level_0(self):
         arrays = [["d1", "d1"], [1, 2]]
-        tuples = list(zip(*arrays))
+        tuples = list(zip(*arrays, strict=True))
         idx = pd.MultiIndex.from_tuples(tuples)
         df = pd.DataFrame([[1, 2]], columns=idx)
         result = column_rename(df, level_0={"d1": "D1"}, level_1=None)
@@ -191,12 +188,10 @@ class TestColumnRename:
 
     def test_renames_multiindex_level_1(self):
         arrays = [["d1", "d1"], ["1", "2"]]
-        tuples = list(zip(*arrays))
+        tuples = list(zip(*arrays, strict=True))
         idx = pd.MultiIndex.from_tuples(tuples)
         df = pd.DataFrame([[1, 2]], columns=idx)
-        result = column_rename(
-            df, level_0=None, level_1={"1": "MIBID_RUB", "2": "MIBOR_RUB"}
-        )
+        result = column_rename(df, level_0=None, level_1={"1": "MIBID_RUB", "2": "MIBOR_RUB"})
         assert "MIBID_RUB" in result.columns.get_level_values(1)
 
 
