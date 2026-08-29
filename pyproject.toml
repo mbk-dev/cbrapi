@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cbrapi"
-version = "0.2.0"
+version = "0.2.1"
 description = "Python interface for Central Bank of Russia (CBR) API"
 authors = [
     "AAARRRT <artiomsalazov@gmail.com>",
