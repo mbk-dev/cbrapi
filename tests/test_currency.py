@@ -354,3 +354,51 @@ class TestSuccessorCurrencyCodes:
 
         assert result.loc[pd.Period("2023-01-03", "D")] == pytest.approx(70.3271)
         assert result.loc[pd.Period("2023-01-10", "D")] == pytest.approx(71.0)
+
+
+# Same redenomination day, but the successor row is listed *first* in document
+# order — only rowOrder says which quote closes the day.
+REDENOMINATION_UNORDERED_XML = b"""<?xml version="1.0" encoding="utf-8"?>
+<ValuteData>
+  <ValuteCursDynamic>
+    <rowOrder>2</rowOrder>
+    <id>R01100Z</id>
+    <Vnom>1</Vnom>
+    <Vcode>R01100Z</Vcode>
+    <CursDate>1999-07-01T00:00:00</CursDate>
+    <Vcurs>12.7700</Vcurs>
+  </ValuteCursDynamic>
+  <ValuteCursDynamic>
+    <rowOrder>1</rowOrder>
+    <id>R01100</id>
+    <Vnom>1000</Vnom>
+    <Vcode>R01100</Vcode>
+    <CursDate>1999-07-01T00:00:00</CursDate>
+    <Vcurs>12.8900</Vcurs>
+  </ValuteCursDynamic>
+  <ValuteCursDynamic>
+    <rowOrder>3</rowOrder>
+    <id>R01100</id>
+    <Vnom>1</Vnom>
+    <Vcode>R01100</Vcode>
+    <CursDate>1999-08-01T00:00:00</CursDate>
+    <Vcurs>13.2700</Vcurs>
+  </ValuteCursDynamic>
+</ValuteData>"""
+
+
+class TestRedenominationRowOrder:
+    def test_successor_row_is_chosen_by_row_order(self, mocker, bgn_currencies_df):
+        """Which quote closes the day is decided by rowOrder, not by the order the
+        elements happen to appear in. Picking the wrong one is a silent 1000x
+        error, not a failure."""
+        mocker.patch(
+            "cbrapi.currency.get_currencies_list", return_value=bgn_currencies_df
+        )
+        mock_client = MagicMock()
+        mock_client.service.GetCursDynamic.return_value = REDENOMINATION_UNORDERED_XML
+        mocker.patch("cbrapi.currency.make_cbr_client", return_value=mock_client)
+
+        result = get_time_series("BGN", "1999-07-01", "1999-08-01")
+
+        assert result.loc[pd.Period("1999-07-01", "D")] == pytest.approx(12.77)

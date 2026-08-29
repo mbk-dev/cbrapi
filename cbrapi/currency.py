@@ -102,9 +102,11 @@ def _collapse_currency_code_transition(df: pd.DataFrame) -> pd.DataFrame:
 
     On a redenomination date, though, CBR lists the day twice: the last quote of
     the old code and the first quote of the new one (R01100 at Vnom=1000 and
-    R01100Z at Vnom=1 on 1999-07-01 for the Bulgarian Lev). The successor row is
-    kept, because every later row of the series is already quoted in the new
-    denomination.
+    R01100Z at Vnom=1 on 1999-07-01 for the Bulgarian Lev). The row that closes
+    the day by rowOrder is kept, because every later row of the series is already
+    quoted in the new denomination. rowOrder decides it rather than the order the
+    elements happen to arrive in: picking the other row is a silent 1000x error,
+    not a failure.
 
     A date repeated under a *single* code is left alone: that is a genuine
     anomaly and must keep tripping the uniqueness check downstream.
@@ -117,8 +119,9 @@ def _collapse_currency_code_transition(df: pd.DataFrame) -> pd.DataFrame:
     transition_dates = codes_per_date[codes_per_date > 1].index
     if transition_dates.empty:
         return df
-    superseded = df["CursDate"].isin(transition_dates) & df["CursDate"].duplicated(keep="last")
-    return df[~superseded].copy()
+    ordered = df.sort_values("rowOrder", kind="stable")
+    superseded = ordered.index[ordered["CursDate"].isin(transition_dates) & ordered["CursDate"].duplicated(keep="last")]
+    return df.drop(index=superseded).copy()
 
 
 def get_time_series(symbol: str, first_date: str, last_date: str, period: str = "D") -> pd.Series:
