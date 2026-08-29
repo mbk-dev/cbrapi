@@ -92,6 +92,35 @@ def get_currency_code(ticker: str) -> str:
     return code
 
 
+def _collapse_currency_code_transition(df: pd.DataFrame) -> pd.DataFrame:
+    """Keep one row per date when a currency changes its CBR code on that date.
+
+    GetCursDynamic answers with a currency's *continuous* history, so rows of
+    successor codes are normal and carry real data (most of the Romanian Leu
+    series comes back under R01585F, not the requested R01585). They must not be
+    filtered out.
+
+    On a redenomination date, though, CBR lists the day twice: the last quote of
+    the old code and the first quote of the new one (R01100 at Vnom=1000 and
+    R01100Z at Vnom=1 on 1999-07-01 for the Bulgarian Lev). The successor row is
+    kept, because every later row of the series is already quoted in the new
+    denomination.
+
+    A date repeated under a *single* code is left alone: that is a genuine
+    anomaly and must keep tripping the uniqueness check downstream.
+    """
+    duplicated = df["CursDate"].duplicated(keep=False)
+    if not duplicated.any():
+        return df
+    codes = df["Vcode"].astype(str).str.strip()
+    codes_per_date = codes[duplicated].groupby(df.loc[duplicated, "CursDate"]).nunique()
+    transition_dates = codes_per_date[codes_per_date > 1].index
+    if transition_dates.empty:
+        return df
+    superseded = df["CursDate"].isin(transition_dates) & df["CursDate"].duplicated(keep="last")
+    return df[~superseded].copy()
+
+
 def get_time_series(symbol: str, first_date: str, last_date: str, period: str = "D") -> pd.Series:
     """
     Get currency rate historical data from CBR.
@@ -164,6 +193,7 @@ def get_time_series(symbol: str, first_date: str, last_date: str, period: str = 
     cbr_cols2 = cbr_cols1.union({"VunitRate"})
     if set(df.columns) not in [cbr_cols1, cbr_cols2]:
         raise ValueError("CBR data has different columns. Probably data format is changed.")
+    df = _collapse_currency_code_transition(df)
     df.drop(columns=["id", "rowOrder", "Vcode"], inplace=True)
     if "VunitRate" in list(df.columns):
         df.drop(columns=["VunitRate"], inplace=True)
