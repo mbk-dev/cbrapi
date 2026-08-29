@@ -1,2 +1,4 @@
 poetry.lock
 *.pyc
+.venv/
+dist/
