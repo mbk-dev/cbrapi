@@ -285,6 +285,36 @@ SAME_CODE_DUPLICATE_XML = b"""<?xml version="1.0" encoding="utf-8"?>
 </ValuteData>"""
 
 
+# Duplicated date where NEITHER row carries the requested code.
+FOREIGN_ONLY_DUPLICATE_XML = b"""<?xml version="1.0" encoding="utf-8"?>
+<ValuteData>
+  <ValuteCursDynamic>
+    <rowOrder>1</rowOrder>
+    <id>R01100Y</id>
+    <Vnom>1000</Vnom>
+    <Vcode>R01100Y</Vcode>
+    <CursDate>1999-07-01T00:00:00</CursDate>
+    <Vcurs>12.8900</Vcurs>
+  </ValuteCursDynamic>
+  <ValuteCursDynamic>
+    <rowOrder>2</rowOrder>
+    <id>R01100Z</id>
+    <Vnom>1</Vnom>
+    <Vcode>R01100Z</Vcode>
+    <CursDate>1999-07-01T00:00:00</CursDate>
+    <Vcurs>12.7700</Vcurs>
+  </ValuteCursDynamic>
+  <ValuteCursDynamic>
+    <rowOrder>3</rowOrder>
+    <id>R01100</id>
+    <Vnom>1</Vnom>
+    <Vcode>R01100</Vcode>
+    <CursDate>1999-08-01T00:00:00</CursDate>
+    <Vcurs>13.2700</Vcurs>
+  </ValuteCursDynamic>
+</ValuteData>"""
+
+
 @pytest.fixture
 def bgn_currencies_df():
     """CBR pads Vcode to a fixed width, so the live service returns 'R01100    '."""
@@ -325,8 +355,9 @@ class TestSuccessorCurrencyCodes:
         result = get_time_series("BGN", "1999-06-01", "1999-08-01")
 
         assert result.index.is_unique
-        # the successor quote wins: the rest of the series is in the new lev
-        assert result.loc[pd.Period("1999-07-01", "D")] == pytest.approx(12.77)
+        # the requested code's own row wins: R01100Z occurs once in the whole
+        # history, while the series itself continues under R01100
+        assert result.loc[pd.Period("1999-07-01", "D")] == pytest.approx(12.89 / 1000)
         assert result.loc[pd.Period("1999-08-01", "D")] == pytest.approx(13.27)
 
     def test_successor_code_history_is_kept(self, mocker, ron_currencies_df):
@@ -387,18 +418,33 @@ REDENOMINATION_UNORDERED_XML = b"""<?xml version="1.0" encoding="utf-8"?>
 </ValuteData>"""
 
 
-class TestRedenominationRowOrder:
-    def test_successor_row_is_chosen_by_row_order(self, mocker, bgn_currencies_df):
-        """Which quote closes the day is decided by rowOrder, not by the order the
-        elements happen to appear in. Picking the wrong one is a silent 1000x
-        error, not a failure."""
-        mocker.patch(
-            "cbrapi.currency.get_currencies_list", return_value=bgn_currencies_df
-        )
+class TestRedenominationTieBreak:
+    def _setup_mocks(self, mocker, currencies_df, rate_xml):
+        mocker.patch("cbrapi.currency.get_currencies_list", return_value=currencies_df)
         mock_client = MagicMock()
-        mock_client.service.GetCursDynamic.return_value = REDENOMINATION_UNORDERED_XML
+        mock_client.service.GetCursDynamic.return_value = rate_xml
         mocker.patch("cbrapi.currency.make_cbr_client", return_value=mock_client)
+
+    def test_requested_code_wins_regardless_of_arrival_order(
+        self, mocker, bgn_currencies_df
+    ):
+        """The tie is broken by Vcode, not by the order rows happen to arrive in.
+        Picking the other row is a silent 1000x error, not a failure."""
+        self._setup_mocks(mocker, bgn_currencies_df, REDENOMINATION_UNORDERED_XML)
 
         result = get_time_series("BGN", "1999-07-01", "1999-08-01")
 
+        assert result.loc[pd.Period("1999-07-01", "D")] == pytest.approx(12.89 / 1000)
+
+    def test_falls_back_to_last_row_when_requested_code_is_absent(
+        self, mocker, bgn_currencies_df
+    ):
+        """If the duplicated date carries no row of the requested code, there is
+        nothing to prefer — keep the row that closes the day by rowOrder rather
+        than failing."""
+        self._setup_mocks(mocker, bgn_currencies_df, FOREIGN_ONLY_DUPLICATE_XML)
+
+        result = get_time_series("BGN", "1999-07-01", "1999-08-01")
+
+        assert result.index.is_unique
         assert result.loc[pd.Period("1999-07-01", "D")] == pytest.approx(12.77)

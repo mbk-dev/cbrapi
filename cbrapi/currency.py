@@ -92,23 +92,29 @@ def get_currency_code(ticker: str) -> str:
     return code
 
 
-def _collapse_currency_code_transition(df: pd.DataFrame) -> pd.DataFrame:
-    """Keep one row per date when a currency changes its CBR code on that date.
+def _collapse_duplicate_code_dates(df: pd.DataFrame, code: str) -> pd.DataFrame:
+    """Keep one row per date when CBR lists a date under more than one code.
 
     GetCursDynamic answers with a currency's *continuous* history, so rows of
-    successor codes are normal and carry real data (most of the Romanian Leu
-    series comes back under R01585F, not the requested R01585). They must not be
+    other codes are normal and carry real data (most of the Romanian Leu series
+    comes back under R01585F, not the requested R01585). They must not be
     filtered out.
 
-    On a redenomination date, though, CBR lists the day twice: the last quote of
-    the old code and the first quote of the new one (R01100 at Vnom=1000 and
-    R01100Z at Vnom=1 on 1999-07-01 for the Bulgarian Lev). The row that closes
-    the day by rowOrder is kept, because every later row of the series is already
-    quoted in the new denomination. rowOrder decides it rather than the order the
-    elements happen to arrive in: picking the other row is a silent 1000x error,
-    not a failure.
+    On the Bulgarian Lev redenomination CBR lists 1999-07-01 twice: R01100 at
+    Vnom=1000 (12.89, the requested code's own quote) and R01100Z at Vnom=1
+    (12.77). R01100Z occurs exactly once in 4152 rows and the series continues
+    under R01100 from 1999-08-01, so it is a one-off annotation of the event
+    rather than a successor. The tie therefore goes to the row of the requested
+    code, which keeps the unit break where CBR's own regular series puts it.
 
-    A date repeated under a *single* code is left alone: that is a genuine
+    Vcode is a space-padded fixed-width field on both sides, so both are
+    stripped before comparing, and the choice is made by code rather than by the
+    order rows happen to arrive in: picking the other row is a silent 1000x
+    error, not a failure.
+
+    When the duplicated date carries no row of the requested code there is
+    nothing to prefer, so the row that closes the day by rowOrder is kept. A
+    date repeated under the *requested* code is left alone: that is a genuine
     anomaly and must keep tripping the uniqueness check downstream.
     """
     duplicated = df["CursDate"].duplicated(keep=False)
@@ -116,11 +122,24 @@ def _collapse_currency_code_transition(df: pd.DataFrame) -> pd.DataFrame:
         return df
     codes = df["Vcode"].astype(str).str.strip()
     codes_per_date = codes[duplicated].groupby(df.loc[duplicated, "CursDate"]).nunique()
-    transition_dates = codes_per_date[codes_per_date > 1].index
-    if transition_dates.empty:
+    ambiguous_dates = codes_per_date[codes_per_date > 1].index
+    if ambiguous_dates.empty:
         return df
-    ordered = df.sort_values("rowOrder", kind="stable")
-    superseded = ordered.index[ordered["CursDate"].isin(transition_dates) & ordered["CursDate"].duplicated(keep="last")]
+
+    requested = str(code).strip()
+    superseded: list = []
+    for curs_date in ambiguous_dates:
+        rows = list(df.index[df["CursDate"] == curs_date])
+        own = [index for index in rows if codes[index] == requested]
+        if len(own) > 1:
+            continue
+        if own:
+            keep = own[0]
+        else:
+            keep = df.loc[rows].sort_values("rowOrder", kind="stable").index[-1]
+        superseded.extend(index for index in rows if index != keep)
+    if not superseded:
+        return df
     return df.drop(index=superseded).copy()
 
 
@@ -196,7 +215,7 @@ def get_time_series(symbol: str, first_date: str, last_date: str, period: str = 
     cbr_cols2 = cbr_cols1.union({"VunitRate"})
     if set(df.columns) not in [cbr_cols1, cbr_cols2]:
         raise ValueError("CBR data has different columns. Probably data format is changed.")
-    df = _collapse_currency_code_transition(df)
+    df = _collapse_duplicate_code_dates(df, code)
     df.drop(columns=["id", "rowOrder", "Vcode"], inplace=True)
     if "VunitRate" in list(df.columns):
         df.drop(columns=["VunitRate"], inplace=True)
