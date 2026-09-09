@@ -15,6 +15,14 @@ from cbrapi.helpers import (
 
 today = date.today()
 
+# The CBR suspends quotation of a currency for years at a time: a group of exotic
+# currencies was dropped on 2009-12-31 and brought back in waves (2017, 2023-01-24,
+# 2025-07-11), and some currencies were never quoted again. Such a break is not a calendar
+# gap and must not be filled with the last known rate. Among the currencies the CBR still
+# quotes the longest internal gap is 247 days (HUF and PLN in 1994) and the shortest
+# suspension is 401 days, so a year separates the two without touching either.
+MAX_QUOTATION_GAP_DAYS = 366
+
 
 @lru_cache(maxsize=1)
 def get_currencies_list() -> pd.DataFrame:
@@ -177,6 +185,8 @@ def get_time_series(symbol: str, first_date: str, last_date: str, period: str = 
     -----
     - Supports both direct and inverse rate calculations
     - Handles data normalization and missing period padding
+    - A break in quotation longer than MAX_QUOTATION_GAP_DAYS is left empty, and a series
+      whose last quotation is older than that is not extended to `last_date`
     - Performs resampling for different frequencies
     - Some tickers may return empty data if not available
 
@@ -231,7 +241,7 @@ def get_time_series(symbol: str, first_date: str, last_date: str, period: str = 
     pad_end_date = data2.date()
     if data1.date() < today < data2.date():
         pad_end_date = today
-    s = pad_missing_periods(s, freq="D", end_date=pad_end_date)
+    s = pad_missing_periods(s, freq="D", end_date=pad_end_date, max_gap=MAX_QUOTATION_GAP_DAYS)
     s.index.rename("date", inplace=True)
     if period.upper() == "M":
         s = s.to_timestamp().resample("ME").last()

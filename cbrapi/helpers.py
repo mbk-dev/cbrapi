@@ -3,10 +3,18 @@ import pandas as pd
 
 
 def pad_missing_periods(
-    ts: pd.Series | pd.DataFrame, freq: str = "D", end_date: date | None = None
+    ts: pd.Series | pd.DataFrame,
+    freq: str = "D",
+    end_date: date | None = None,
+    max_gap: int | None = None,
 ) -> pd.Series | pd.DataFrame:
     """
     Pad missing dates and values in the time series.
+
+    `max_gap` limits the padding: two consecutive observations more than `max_gap` periods
+    of `freq` apart keep the gap between them, and the series is extended to `end_date`
+    only when the last observation is within `max_gap` periods of it. By default (None)
+    every gap is padded.
     """
     if ts.empty:
         return ts
@@ -14,15 +22,38 @@ def pad_missing_periods(
     if not isinstance(ts.index, pd.PeriodIndex):
         ts.index = ts.index.to_period(freq)
     ts.sort_index(ascending=True, inplace=True)  # The order should be ascending to make new Period index
-    end = ts.index[-1]
+    observations = ts.index
+    end = observations[-1]
     if end_date:
         end_period = pd.Period(end_date, freq=freq)
-        if end_period > end:
+        if end_period > end and (max_gap is None or (end_period - end).n <= max_gap):
             end = end_period
-    idx = pd.period_range(start=ts.index[0], end=end, freq=freq)
+    idx = _periods_to_pad(observations, end, freq, max_gap)
     ts = ts.reindex(idx, method="pad")
     ts.index.rename(name, inplace=True)
     return ts
+
+
+def _periods_to_pad(
+    observations: pd.PeriodIndex, end: pd.Period, freq: str, max_gap: int | None
+) -> pd.PeriodIndex:
+    """
+    Build the index to pad the time series to: every period from the first observation to
+    `end`, minus the gaps longer than `max_gap`.
+
+    Observations separated by more than `max_gap` periods start a new segment; each segment
+    is covered continuously and nothing is placed between them.
+    """
+    if max_gap is None:
+        return pd.period_range(start=observations[0], end=end, freq=freq)
+    ordinals = observations.asi8  # ordinals count freq periods, so their difference is the gap
+    idx = pd.PeriodIndex([], freq=freq)
+    segment_start = observations[0]
+    for position in range(1, len(ordinals)):
+        if ordinals[position] - ordinals[position - 1] > max_gap:
+            idx = idx.append(pd.period_range(start=segment_start, end=observations[position - 1], freq=freq))
+            segment_start = observations[position]
+    return idx.append(pd.period_range(start=segment_start, end=end, freq=freq))
 
 
 def calculate_inverse_rate(close_ts):

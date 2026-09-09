@@ -57,6 +57,55 @@ class TestPadMissingPeriods:
         result = pad_missing_periods(df)
         assert len(result) == 3
 
+    def test_gap_longer_than_max_gap_is_left_unfilled(self):
+        """A quotation suspension must stay a hole instead of a constant CBR never published."""
+        idx = pd.PeriodIndex(["2010-01-15", "2025-07-11"], freq="D")
+        s = pd.Series([0.0030, 0.0011], index=idx)
+        result = pad_missing_periods(s, max_gap=366)
+        assert len(result) == 2
+        assert pd.Period("2015-06-01", freq="D") not in result.index
+
+    def test_gap_shorter_than_max_gap_is_still_filled(self):
+        # Friday -> Monday: a weekend must not become a hole
+        idx = pd.PeriodIndex(["2023-01-06", "2023-01-09"], freq="D")
+        s = pd.Series([70.0, 71.0], index=idx)
+        result = pad_missing_periods(s, max_gap=366)
+        assert len(result) == 4
+        assert result["2023-01-07"] == pytest.approx(70.0)
+
+    def test_gap_equal_to_max_gap_is_filled(self):
+        idx = pd.PeriodIndex(["2023-01-01", "2023-01-04"], freq="D")
+        s = pd.Series([1.0, 2.0], index=idx)
+        result = pad_missing_periods(s, max_gap=3)
+        assert len(result) == 4
+
+    def test_gap_one_period_over_max_gap_is_not_filled(self):
+        idx = pd.PeriodIndex(["2023-01-01", "2023-01-05"], freq="D")
+        s = pd.Series([1.0, 2.0], index=idx)
+        result = pad_missing_periods(s, max_gap=3)
+        assert len(result) == 2
+
+    def test_short_gaps_around_a_long_one_are_still_filled(self):
+        idx = pd.PeriodIndex(["2009-12-29", "2009-12-31", "2023-01-24", "2023-01-26"], freq="D")
+        s = pd.Series([1.0, 2.0, 3.0, 4.0], index=idx)
+        result = pad_missing_periods(s, max_gap=366)
+        assert len(result) == 6
+        assert result["2009-12-30"] == pytest.approx(1.0)
+        assert result["2023-01-25"] == pytest.approx(3.0)
+
+    def test_tail_older_than_max_gap_is_not_extended(self):
+        idx = pd.PeriodIndex(["2008-12-31"], freq="D")
+        s = pd.Series([1.5], index=idx)
+        result = pad_missing_periods(s, end_date=date(2026, 9, 9), max_gap=366)
+        assert result.index[-1] == pd.Period("2008-12-31", freq="D")
+
+    def test_fresh_tail_is_still_extended_to_end_date(self):
+        idx = pd.PeriodIndex(["2023-01-06"], freq="D")
+        s = pd.Series([70.0], index=idx)
+        result = pad_missing_periods(s, end_date=date(2023, 1, 9), max_gap=366)
+        assert result.index[-1] == pd.Period("2023-01-09", freq="D")
+        assert result["2023-01-09"] == pytest.approx(70.0)
+
 
 # ---------------------------------------------------------------------------
 # calculate_inverse_rate

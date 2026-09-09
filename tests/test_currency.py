@@ -448,3 +448,111 @@ class TestRedenominationTieBreak:
 
         assert result.index.is_unique
         assert result.loc[pd.Period("1999-07-01", "D")] == pytest.approx(12.77)
+
+
+# ---------------------------------------------------------------------------
+# get_time_series — quotation suspensions
+# ---------------------------------------------------------------------------
+
+# The CBR dropped a group of exotic currencies on 2009-12-31 and brought them
+# back in waves. Nothing at all was published in between, so the suspension
+# must not be filled with the last pre-suspension quote.
+SUSPENDED_QUOTATION_XML = b"""<?xml version="1.0" encoding="utf-8"?>
+<ValuteData>
+  <ValuteCursDynamic>
+    <rowOrder>0</rowOrder>
+    <id>R01235</id>
+    <Vnom>1</Vnom>
+    <Vcode>R01235</Vcode>
+    <CursDate>2009-12-29T00:00:00</CursDate>
+    <Vcurs>30.0000</Vcurs>
+  </ValuteCursDynamic>
+  <ValuteCursDynamic>
+    <rowOrder>1</rowOrder>
+    <id>R01235</id>
+    <Vnom>1</Vnom>
+    <Vcode>R01235</Vcode>
+    <CursDate>2009-12-31T00:00:00</CursDate>
+    <Vcurs>30.5000</Vcurs>
+  </ValuteCursDynamic>
+  <ValuteCursDynamic>
+    <rowOrder>2</rowOrder>
+    <id>R01235</id>
+    <Vnom>1</Vnom>
+    <Vcode>R01235</Vcode>
+    <CursDate>2023-01-24T00:00:00</CursDate>
+    <Vcurs>70.0000</Vcurs>
+  </ValuteCursDynamic>
+  <ValuteCursDynamic>
+    <rowOrder>3</rowOrder>
+    <id>R01235</id>
+    <Vnom>1</Vnom>
+    <Vcode>R01235</Vcode>
+    <CursDate>2023-01-26T00:00:00</CursDate>
+    <Vcurs>71.0000</Vcurs>
+  </ValuteCursDynamic>
+</ValuteData>"""
+
+# A currency the CBR stopped quoting for good (SKKRUB ends in 2008-12): the
+# series has to end where the quotations end.
+DEAD_TAIL_XML = b"""<?xml version="1.0" encoding="utf-8"?>
+<ValuteData>
+  <ValuteCursDynamic>
+    <rowOrder>0</rowOrder>
+    <id>R01235</id>
+    <Vnom>1</Vnom>
+    <Vcode>R01235</Vcode>
+    <CursDate>2008-12-30T00:00:00</CursDate>
+    <Vcurs>1.2000</Vcurs>
+  </ValuteCursDynamic>
+  <ValuteCursDynamic>
+    <rowOrder>1</rowOrder>
+    <id>R01235</id>
+    <Vnom>1</Vnom>
+    <Vcode>R01235</Vcode>
+    <CursDate>2008-12-31T00:00:00</CursDate>
+    <Vcurs>1.2500</Vcurs>
+  </ValuteCursDynamic>
+</ValuteData>"""
+
+
+class TestQuotationSuspensions:
+    def _setup_mocks(self, mocker, currencies_df, rate_xml):
+        mocker.patch("cbrapi.currency.get_currencies_list", return_value=currencies_df)
+        mock_client = MagicMock()
+        mock_client.service.GetCursDynamic.return_value = rate_xml
+        mocker.patch("cbrapi.currency.make_cbr_client", return_value=mock_client)
+
+    def test_suspension_longer_than_a_year_is_left_empty(self, mocker, currencies_df):
+        self._setup_mocks(mocker, currencies_df, SUSPENDED_QUOTATION_XML)
+
+        result = get_time_series("USD", "2009-12-01", "2023-02-01")
+
+        assert pd.Period("2015-06-01", "D") not in result.index
+        assert result.loc[pd.Period("2009-12-31", "D")] == pytest.approx(30.5)
+        assert result.loc[pd.Period("2023-01-24", "D")] == pytest.approx(70.0)
+
+    def test_short_gaps_are_still_padded(self, mocker, currencies_df):
+        """Padding stays on for everything that is not a suspension."""
+        self._setup_mocks(mocker, currencies_df, SUSPENDED_QUOTATION_XML)
+
+        result = get_time_series("USD", "2009-12-01", "2023-02-01")
+
+        assert result.loc[pd.Period("2009-12-30", "D")] == pytest.approx(30.0)
+        assert result.loc[pd.Period("2023-01-25", "D")] == pytest.approx(70.0)
+
+    def test_dead_tail_is_not_extended_to_last_date(self, mocker, currencies_df):
+        self._setup_mocks(mocker, currencies_df, DEAD_TAIL_XML)
+
+        result = get_time_series("USD", "2008-01-01", "2010-06-01")
+
+        assert result.index[-1] == pd.Period("2008-12-31", "D")
+
+    def test_fresh_tail_still_reaches_last_date(self, mocker, currencies_df):
+        """A request made on a Sunday must not end on the Friday quotation."""
+        self._setup_mocks(mocker, currencies_df, RATES_XML)
+
+        result = get_time_series("USD", "2023-01-01", "2023-01-15")
+
+        assert result.index[-1] == pd.Period("2023-01-15", "D")
+        assert result.loc[pd.Period("2023-01-15", "D")] == pytest.approx(71.0)
