@@ -123,7 +123,7 @@ def normalize_data(data, period, level_0=None, level_1=None, symbol=None):
         data = data.resample("M").last()
 
     if len(data.columns) == 1:
-        data = data.squeeze()
+        data = data.squeeze(axis=1)
 
     return data
 
