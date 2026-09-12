@@ -287,6 +287,27 @@ class TestGetRuoniaTs:
         assert isinstance(result, pd.Series)
         assert result.name == "RUONIA_OVERNIGHT"
 
+    def test_rate_single_month_response_keeps_timestamp(self, mocker):
+        single_point_xml = b"""<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <ro>
+    <DateMet>2026-09-01T00:00:00</DateMet>
+    <ruo>7.11</ruo>
+    <id>1</id>
+    <rowOrder>0</rowOrder>
+    <vol>0</vol>
+  </ro>
+</root>"""
+        mock_client = MagicMock()
+        mock_client.service.Ruonia.return_value = single_point_xml
+        mocker.patch("cbrapi.ruonia.make_cbr_client", return_value=mock_client)
+
+        result = get_ruonia_ts("RUONIA.RATE", "2026-09-01", "2026-09-10", period="M")
+
+        assert isinstance(result, pd.Series)
+        assert result.index.tolist() == [pd.Period("2026-09", freq="M")]
+        assert result.iloc[0] == pytest.approx(0.0711)
+
     def test_ruonia_indx_not_divided_by_100(self, mocker):
         self._mock_index(mocker)
         result = get_ruonia_ts("RUONIA.INDX", "2023-01-01", "2023-01-15")

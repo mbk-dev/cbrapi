@@ -9,10 +9,32 @@ from cbrapi.helpers import (
     remove_unnecessary_columns,
     unstack_groups,
     column_rename,
+    normalize_data,
     guess_date,
     check_ticker_code,
     check_symbol_ts,
 )
+
+# ---------------------------------------------------------------------------
+# normalize_data
+# ---------------------------------------------------------------------------
+
+
+class TestNormalizeData:
+    @pytest.mark.parametrize(
+        ("period", "expected_date"),
+        [("D", "2026-09-01"), ("M", "2026-09")],
+    )
+    def test_keeps_single_observation_as_series(self, period, expected_date):
+        """A one-point CBR response must retain its date and Series interface."""
+        data = pd.DataFrame({"DateMet": ["2026-09-01T00:00:00"], "Rate": [7.11]})
+
+        result = normalize_data(data, period, level_1={"Rate": "RUONIA_RATE"})
+
+        assert isinstance(result, pd.Series)
+        assert result.index.tolist() == [pd.Period(expected_date, freq=period)]
+        assert result.iloc[0] == pytest.approx(7.11)
+
 
 # ---------------------------------------------------------------------------
 # pad_missing_periods
