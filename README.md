@@ -195,22 +195,13 @@ cbr.get_metals_prices('2024-01-01', '2025-01-31').head()
       <td>2654.59</td>
       <td>2845.84</td>
     </tr>
-    <tr>
-      <th>2024-01-12</th>
-      <td>5749.64</td>
-      <td>65.26</td>
-      <td>2618.17</td>
-      <td>2833.52</td>
-    </tr>
-    <tr>
-      <th>2024-01-13</th>
-      <td>5749.64</td>
-      <td>65.26</td>
-      <td>2618.17</td>
-      <td>2833.52</td>
-    </tr>
+
+
   </tbody>
 </table>
+
+*First three rows shown; run the example to inspect the complete result.*
+
 
 ### 3. Monitor ROISfix daily pricing trends
 
@@ -267,26 +258,13 @@ cbr.get_roisfix().head()
       <td>3.32</td>
       <td>3.51</td>
     </tr>
-    <tr>
-      <th>2011-04-17</th>
-      <td>3.08</td>
-      <td>3.09</td>
-      <td>3.19</td>
-      <td>3.24</td>
-      <td>3.31</td>
-      <td>3.50</td>
-    </tr>
-    <tr>
-      <th>2011-04-18</th>
-      <td>3.08</td>
-      <td>3.09</td>
-      <td>3.19</td>
-      <td>3.24</td>
-      <td>3.31</td>
-      <td>3.49</td>
-    </tr>
+
+
   </tbody>
 </table>
+
+*First three rows shown; run the example to inspect the complete result.*
+
 
 ## License
 
