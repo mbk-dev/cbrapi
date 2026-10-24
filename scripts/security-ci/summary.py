@@ -19,7 +19,10 @@ def summarize(tool, payload, code):  # noqa: C901 - One allowlisted dispatcher k
             rows, failures, paths = payload['results'], payload['errors'], payload['paths']['scanned']
             if not all(isinstance(x, list) for x in (rows, failures, paths)):
                 return error
-            count, errors, inputs = len(rows), len(failures), len(paths)
+            fixpoint_timeouts = payload.get('time', {}).get('fixpoint_timeouts', [])
+            if not isinstance(fixpoint_timeouts, list):
+                return error
+            count, errors, inputs = len(rows), len(failures) + len(fixpoint_timeouts), len(paths)
         elif tool == 'trivy':
             if payload['SchemaVersion'] != 2:
                 return error
@@ -39,7 +42,10 @@ def summarize(tool, payload, code):  # noqa: C901 - One allowlisted dispatcher k
     except (KeyError, TypeError, AttributeError):
         return error
     status = 'partial' if errors else 'coverage_gap' if inputs == 0 else 'findings' if count else 'completed'
-    return {'status': status, 'findings': None if inputs == 0 else count, 'errors': errors, 'inputs': inputs}
+    result = {'status': status, 'findings': None if inputs == 0 else count, 'errors': errors, 'inputs': inputs}
+    if tool == 'semgrep':
+        result['timeouts'] = len(fixpoint_timeouts)
+    return result
 
 
 if __name__ == '__main__':

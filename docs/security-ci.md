@@ -32,3 +32,7 @@ Verify the summary/privacy/baseline contract locally:
 ```sh
 python3 -m unittest discover -s scripts/security-ci -p 'test_*.py'
 ```
+
+Semgrep Fixpoint timeout diagnostics from `time.fixpoint_timeouts` contribute
+to errors and a separate timeout count. They cannot be accepted by a parser
+baseline and keep the job PARTIAL/failing. The contract has 21 unit tests.

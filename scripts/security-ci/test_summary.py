@@ -31,7 +31,8 @@ class SummaryTests(unittest.TestCase):
 
     def test_semgrep_parser_failure_is_partial_with_positive_findings(self):
         result = self.module.summarize('semgrep', {'results': [{}], 'errors': [{}], 'paths': {'scanned': ['private.py']}}, 0)
-        self.assertEqual(result, {'status': 'partial', 'findings': 1, 'errors': 1, 'inputs': 1})
+        self.assertEqual(result, {'status': 'partial', 'findings': 1, 'errors': 1, 'inputs': 1, 'timeouts': 0})
+        self.assertEqual(result.get('timeouts'), 0)
 
     def test_malformed_schema_is_error(self):
         for tool in ('gitleaks', 'semgrep', 'trivy'):
@@ -39,6 +40,28 @@ class SummaryTests(unittest.TestCase):
 
     def test_falsy_invalid_trivy_array_is_not_a_coverage_gap(self):
         self.assertEqual(self.module.summarize('trivy', {'SchemaVersion': 2, 'Results': ''}, 0)['status'], 'tool_error')
+
+
+    def test_fixpoint_timeout_is_partial_even_without_top_level_errors(self):
+        payload = {'results': [{}], 'errors': [], 'paths': {'scanned': ['private.py']},
+                   'time': {'fixpoint_timeouts': [{'message': 'DO_NOT_DISCLOSE', 'location': {'path': 'private.py'}}]}}
+        result = self.module.summarize('semgrep', payload, 0)
+        self.assertEqual(result, {'status': 'partial', 'findings': 1, 'errors': 1, 'inputs': 1, 'timeouts': 1})
+        self.assertEqual(result.get('timeouts'), 1)
+        self.assertNotIn('DO_NOT_DISCLOSE', str(result))
+        self.assertNotIn('private.py', str(result))
+
+    def test_fixpoint_timeout_counts_in_addition_to_parser_errors(self):
+        payload = {'results': [{}], 'errors': [{}], 'paths': {'scanned': ['private.py']},
+                   'time': {'fixpoint_timeouts': [{}]}}
+        self.assertEqual(self.module.summarize('semgrep', payload, 0)['errors'], 2)
+
+    def test_malformed_fixpoint_timeout_list_cannot_be_clean(self):
+        for invalid in ('', None, {}):
+            with self.subTest(invalid=invalid):
+                payload = {'results': [], 'errors': [], 'paths': {'scanned': ['x.py']},
+                           'time': {'fixpoint_timeouts': invalid}}
+                self.assertEqual(self.module.summarize('semgrep', payload, 0)['status'], 'tool_error')
 
 
 if __name__ == '__main__':
