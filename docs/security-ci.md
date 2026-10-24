@@ -35,7 +35,7 @@ python3 -I -m unittest discover -s scripts/security-ci -p 'test_*.py'
 
 Semgrep Fixpoint timeout diagnostics from `time.fixpoint_timeouts` contribute
 to errors and a separate timeout count. They cannot be accepted by a parser
-baseline and keep the job PARTIAL/failing. The contract has 22 unit tests.
+baseline and keep the job PARTIAL/failing. The contract has 29 unit tests.
 
 ## Reusable action
 
@@ -52,3 +52,5 @@ All tool/bootstrap child processes run beside their private logs, not inside
 the target project, so target modules cannot shadow Python bootstrap modules.
 A real adversarial-module regression test proves the failure before the fix.
 The action directory depth is part of the reviewed metadata contract.
+
+The orchestration tests call audit() through controlled download/process boundaries and real report parsing, baseline, JSON output and exit aggregation. Removing failure aggregation makes nine assertions fail; advisory findings retain exit zero. No scanner/bootstrap runtime code changed in this test-only revision.
