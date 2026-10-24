@@ -1,0 +1,23 @@
+name: Pinned source security audit
+description: Advisory source scanning with private raw reports and fail-closed coverage errors
+inputs:
+  base-sha:
+    description: Pull request base commit for trusted parser policy and commit range
+    required: false
+    default: ''
+runs:
+  using: composite
+  steps:
+    - name: Verify safe summary contract
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      env:
+        SECURITY_ACTION_DIR: ${{ github.action_path }}
+      run: python3 -I -m unittest discover -s "$SECURITY_ACTION_DIR/../../../scripts/security-ci" -p 'test_*.py'
+    - name: Scan source without installing application dependencies
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        SECURITY_ACTION_DIR: ${{ github.action_path }}
+        SECURITY_BASE_SHA: ${{ inputs.base-sha }}
+      run: python3 -E -s "$SECURITY_ACTION_DIR/../../../scripts/security-ci/run.py"

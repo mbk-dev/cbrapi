@@ -31,8 +31,8 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: Verify safe summary contract
-        run: python3 -m unittest discover -s scripts/security-ci -p 'test_*.py'
+        run: python3 -I -m unittest discover -s scripts/security-ci -p 'test_*.py'
       - name: Scan source without installing application dependencies
         env:
           SECURITY_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
-        run: python3 scripts/security-ci/run.py
+        run: python3 -E -s scripts/security-ci/run.py

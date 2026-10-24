@@ -29,7 +29,7 @@ def command(args, log, timeout=600, env=None):
     with log.open('wb') as output:
         try:
             return subprocess.run(args, stdout=output, stderr=subprocess.STDOUT,
-                                  timeout=timeout, env=env, check=False).returncode
+                                  timeout=timeout, env=env, cwd=log.parent, check=False).returncode
         except (OSError, subprocess.TimeoutExpired):
             return 124
 
