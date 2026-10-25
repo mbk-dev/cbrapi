@@ -54,3 +54,20 @@ A real adversarial-module regression test proves the failure before the fix.
 The action directory depth is part of the reviewed metadata contract.
 
 The orchestration tests call audit() through controlled download/process boundaries and real report parsing, baseline, JSON output and exit aggregation. Removing failure aggregation makes nine assertions fail; advisory findings retain exit zero. No scanner/bootstrap runtime code changed in this test-only revision.
+
+### Execution diagnostics
+
+Each scanner summary includes `execution` with a fixed `status` (`exited`,
+`timeout`, or `launch_error`), actual `returncode` or null, and bounded
+`duration_ms`. The legacy integer result is unchanged: a wall timeout and a
+launch error still fail the job. An actual scanner exit 124 is distinguished
+from the runner's timeout. No raw log, exception message, path, or source text
+is published.
+
+`report_state` distinguishes `missing`, `invalid_json`, `unreadable`, and `json`.
+The last value means JSON syntax parsed, **not** that the scanner schema is valid
+or coverage complete. Schema validation, parser errors, fixpoint timeouts and
+reviewed baselines retain their existing fail-closed behavior. Missing reports
+still have null finding/input counts. The 600-second process limit and scanner
+flags are unchanged. New diagnostics do not repair large-repository timeouts;
+consumers pinned to an earlier action revision need a reviewed pin update.

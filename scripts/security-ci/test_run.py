@@ -87,6 +87,8 @@ class AuditOutcomeTests(unittest.TestCase):
                 if name not in reports:
                     return 0  # No network/installation in a report-orchestration test.
                 payload, code = reports[name]
+                if 'diagnostics' in kwargs:
+                    kwargs['diagnostics'].update(status='exited', returncode=code, duration_ms=0)
                 output = log.with_suffix('.json')
                 if payload != 'missing':
                     output.write_text('{' if payload == 'malformed' else json.dumps(payload))
@@ -159,3 +161,67 @@ class AuditOutcomeTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class CommandDiagnosticsTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        spec = importlib.util.spec_from_file_location('command_diagnostics', Path(__file__).with_name('run.py'))
+        cls.module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cls.module)
+
+    def execute(self, args, timeout=2):
+        with tempfile.TemporaryDirectory() as directory:
+            details = {}
+            code = self.module.command(args, Path(directory) / 'private-canary.log',
+                                       timeout=timeout, diagnostics=details)
+            self.assertEqual(set(details), {'status', 'returncode', 'duration_ms'})
+            self.assertIsInstance(details['duration_ms'], int)
+            self.assertGreaterEqual(details['duration_ms'], 0)
+            self.assertNotIn('private-canary', str(details))
+            return code, details
+
+    def test_actual_nonzero_exit_is_distinct_from_wall_timeout(self):
+        code, details = self.execute([sys.executable, '-c', 'raise SystemExit(124)'])
+        self.assertEqual(code, 124)
+        self.assertEqual(details['status'], 'exited')
+        self.assertEqual(details['returncode'], 124)
+
+    def test_actual_wall_timeout_is_explicit_without_exception_text(self):
+        code, details = self.execute([sys.executable, '-c', 'while True: pass'], timeout=0.05)
+        self.assertEqual(code, 124)
+        self.assertEqual(details['status'], 'timeout')
+        self.assertIsNone(details['returncode'])
+
+    def test_actual_launch_error_is_distinct_from_timeout(self):
+        code, details = self.execute(['/no-such-private-canary-scanner'])
+        self.assertEqual(code, 124)
+        self.assertEqual(details['status'], 'launch_error')
+        self.assertIsNone(details['returncode'])
+
+
+class AuditDiagnosticsTests(unittest.TestCase):
+    setUpClass = classmethod(AuditOutcomeTests.setUpClass.__func__)
+    run_audit = AuditOutcomeTests.run_audit
+
+    def test_missing_json_and_failure_keep_safe_execution_metadata(self):
+        code, payload = self.run_audit({'semgrep': ('missing', 124)})
+        self.assertEqual(code, 1)
+        scanner = payload['scanners']['semgrep']
+        self.assertEqual(scanner['status'], 'tool_error')
+        self.assertIsNone(scanner['findings'])
+        self.assertEqual(scanner['report_state'], 'missing')
+        self.assertEqual(scanner['execution']['status'], 'exited')
+        self.assertEqual(scanner['execution']['returncode'], 124)
+        self.assertNotIn('not-public-canary', str(payload))
+
+    def test_invalid_json_is_distinct_from_missing_report(self):
+        code, payload = self.run_audit({'semgrep': ('malformed', 0)})
+        self.assertEqual(code, 1)
+        self.assertEqual(payload['scanners']['semgrep']['report_state'], 'invalid_json')
+
+    def test_parsed_json_is_not_a_claim_of_schema_validity(self):
+        code, payload = self.run_audit({'semgrep': ({}, 0)})
+        self.assertEqual(code, 1)
+        self.assertEqual(payload['scanners']['semgrep']['report_state'], 'json')
+        self.assertEqual(payload['scanners']['semgrep']['status'], 'tool_error')

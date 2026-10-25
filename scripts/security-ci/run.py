@@ -25,13 +25,25 @@ class HttpsRedirects(urllib.request.HTTPRedirectHandler):
         return super().redirect_request(request, response, code, message, headers, newurl)
 
 
-def command(args, log, timeout=600, env=None):
+def command(args, log, timeout=600, env=None, diagnostics=None):
+    started = time.monotonic()
+    status, returncode = 'launch_error', None
     with log.open('wb') as output:
         try:
-            return subprocess.run(args, stdout=output, stderr=subprocess.STDOUT,
-                                  timeout=timeout, env=env, cwd=log.parent, check=False).returncode
-        except (OSError, subprocess.TimeoutExpired):
+            returncode = subprocess.run(args, stdout=output, stderr=subprocess.STDOUT,
+                                        timeout=timeout, env=env, cwd=log.parent, check=False).returncode
+            status = 'exited'
+            return returncode
+        except subprocess.TimeoutExpired:
+            status = 'timeout'
             return 124
+        except OSError:
+            return 124
+        finally:
+            if diagnostics is not None:
+                diagnostics.clear()
+                diagnostics.update(status=status, returncode=returncode,
+                                   duration_ms=min(2_147_483_647, max(0, round((time.monotonic() - started) * 1000))))
 
 
 def download(pin, destination):
@@ -144,14 +156,21 @@ def audit():  # noqa: C901 - Keep the redacted failure boundary around the compl
             'semgrep': [str(venv / 'bin/semgrep'), 'scan', '--config', str(rules), '--metrics=off', '--disable-version-check', '--disable-nosem', '--x-ignore-semgrepignore-files', '--timeout=20', '--jobs=2', '--max-memory=512', '--no-git-ignore', '--exclude=.git', '--exclude=node_modules', '--exclude=.venv', '--exclude=tmp', '--json', '--output', str(state / 'semgrep.json'), str(root)],
         }
         for tool, args in jobs.items():
-            code = command(args, state / (tool + '.log'), env=env)
+            execution = {}
+            code = command(args, state / (tool + '.log'), env=env, diagnostics=execution)
+            report_state = 'json'  # Syntax only; summarize still validates the scanner schema.
             try:
                 payload = json.loads((state / (tool + '.json')).read_text())
-            except (ValueError, OSError):
-                payload = None
+            except FileNotFoundError:
+                payload, report_state = None, 'missing'
+            except ValueError:
+                payload, report_state = None, 'invalid_json'
+            except OSError:
+                payload, report_state = None, 'unreadable'
             result['scanners'][tool] = summarize(tool, payload, code)
             if tool == 'semgrep':
                 result['scanners'][tool] = apply_known_gaps(result['scanners'][tool], payload, policy, root)
+            result['scanners'][tool].update(execution=execution, report_state=report_state)
             failed |= result['scanners'][tool]['status'] in ('tool_error', 'partial')
     except Exception:
         # Exception messages can contain attacker-controlled URLs, paths or source text.
