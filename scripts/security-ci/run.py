@@ -157,7 +157,10 @@ def audit():  # noqa: C901 - Keep the redacted failure boundary around the compl
         }
         for tool, args in jobs.items():
             execution = {}
-            code = command(args, state / (tool + '.log'), env=env, diagnostics=execution)
+            wall_limit_seconds = 1800 if tool == 'semgrep' else 600
+            code = command(args, state / (tool + '.log'), timeout=wall_limit_seconds,
+                           env=env, diagnostics=execution)
+            execution['wall_limit_seconds'] = wall_limit_seconds
             report_state = 'json'  # Syntax only; summarize still validates the scanner schema.
             try:
                 payload = json.loads((state / (tool + '.json')).read_text())

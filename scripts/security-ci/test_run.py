@@ -47,7 +47,7 @@ class AuditOutcomeTests(unittest.TestCase):
         cls.module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(cls.module)
 
-    def run_audit(self, change=None, bootstrap_error=False):
+    def run_audit(self, change=None, bootstrap_error=False, process_observer=None):
         import contextlib
         import io
         import json
@@ -87,6 +87,8 @@ class AuditOutcomeTests(unittest.TestCase):
                 if name not in reports:
                     return 0  # No network/installation in a report-orchestration test.
                 payload, code = reports[name]
+                if process_observer is not None:
+                    process_observer(name, args, kwargs)
                 if 'diagnostics' in kwargs:
                     kwargs['diagnostics'].update(status='exited', returncode=code, duration_ms=0)
                 output = log.with_suffix('.json')
@@ -225,3 +227,43 @@ class AuditDiagnosticsTests(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertEqual(payload['scanners']['semgrep']['report_state'], 'json')
         self.assertEqual(payload['scanners']['semgrep']['status'], 'tool_error')
+
+
+class ScannerBudgetTests(unittest.TestCase):
+    setUpClass = classmethod(AuditOutcomeTests.setUpClass.__func__)
+    run_audit = AuditOutcomeTests.run_audit
+
+    def test_extended_semgrep_budget_is_used_by_the_actual_process_boundary(self):
+        calls = {}
+        def observe(name, args, kwargs):
+            calls[name] = (args, kwargs.get('timeout', 600), Path.cwd())
+        code, result = self.run_audit(process_observer=observe)
+        self.assertEqual(code, 0)
+        self.assertEqual(calls['semgrep'][1], 1800)
+        self.assertEqual(calls['gitleaks'][1], 600)
+        self.assertEqual(calls['trivy'][1], 600)
+        self.assertEqual(result['scanners']['semgrep']['execution']['wall_limit_seconds'], 1800)
+        args = calls['semgrep'][0]
+        self.assertEqual(Path(args[-1]), calls['semgrep'][2])
+        self.assertIn('--timeout=20', args)
+        self.assertIn('--jobs=2', args)
+        self.assertIn('--max-memory=512', args)
+        self.assertEqual([a for a in args if a.startswith('--exclude=')],
+                         ['--exclude=.git', '--exclude=node_modules', '--exclude=.venv', '--exclude=tmp'])
+
+    def test_longer_deadline_does_not_make_a_missing_report_successful(self):
+        code, result = self.run_audit({'semgrep': ('missing', 124)})
+        scanner = result['scanners']['semgrep']
+        self.assertEqual(code, 1)
+        self.assertEqual(scanner['status'], 'tool_error')
+        self.assertIsNone(scanner['findings'])
+        self.assertIsNone(scanner['inputs'])
+        self.assertEqual(scanner['report_state'], 'missing')
+        self.assertEqual(scanner['execution']['wall_limit_seconds'], 1800)
+
+    def test_shared_source_workflow_has_room_for_scanner_and_other_phases(self):
+        import re
+        workflow = Path(__file__).resolve().parents[2] / '.github/workflows/security-audit.yml'
+        matches = re.findall(r'(?m)^    timeout-minutes: (\d+)\s*$', workflow.read_text())
+        self.assertEqual(len(matches), 1)
+        self.assertGreaterEqual(int(matches[0]), 60)

@@ -68,6 +68,34 @@ is published.
 The last value means JSON syntax parsed, **not** that the scanner schema is valid
 or coverage complete. Schema validation, parser errors, fixpoint timeouts and
 reviewed baselines retain their existing fail-closed behavior. Missing reports
-still have null finding/input counts. The 600-second process limit and scanner
-flags are unchanged. New diagnostics do not repair large-repository timeouts;
+still have null finding/input counts. The generic command default remains 600 seconds; the scanner-specific
+Semgrep budget is documented below. Analysis flags remain unchanged. New diagnostics do not repair large-repository timeouts;
 consumers pinned to an earlier action revision need a reviewed pin update.
+
+### Measured large-source budget (infra273 / cbrapi8)
+
+Semgrep has a fixed 1800-second outer wall limit; Gitleaks and Trivy retain
+600-second process limits. The source workflow allows 60 minutes for setup and
+all scanners. External callers must carry the same job budget when updating
+their immutable action pin. `execution.wall_limit_seconds` records the actual
+configured limit, separate from elapsed time and the scanner's own exit code.
+
+On exact API source `4a1c03e` with Semgrep 1.182.0 and the pinned 1417-rule pack,
+600 seconds ended without JSON. An otherwise identical 1200-second control
+completed after 1198.323 seconds: 15913 inputs, 4777 candidate findings, 15 reported
+errors (13 parser errors and 2 rule timeouts), plus 15 fixpoint timeouts. Only 1.677 seconds remained, so the final cap
+provides 50 percent headroom to this measured case. This is an observed workload,
+not a completion guarantee for arbitrary source or slow network/bootstrap.
+
+Per-rule timeout 20 seconds, jobs 2, max-memory 512, source root and exclusions
+are preserved. No findings, files or timeouts are suppressed. Any report with
+parser/fixpoint errors remains PARTIAL/failure; a cap hit or missing/invalid
+report remains tool_error/null. Candidate counts are not confirmed exploits.
+Raw source, target paths and scanner diagnostics stay private.
+
+The configured scanner maxima sum to 50 minutes (10 + 10 + 30). The final
+60-minute caller budget leaves 10 minutes above those maxima for normal setup.
+An earlier 45-minute proposal was rejected by a RED budget contract because it
+could interrupt the Semgrep process before its configured cap after slow earlier
+scanners. Bootstrap/network hard failures can still exhaust the finite job cap;
+that remains a failed/unknown run, never a clean scan.
