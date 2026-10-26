@@ -32,7 +32,11 @@ def error_identity(error, root, policy):
             positions.append(position)
         record = {'path': str(source.relative_to(root)), 'file_sha256': hashlib.sha256(source.read_bytes()).hexdigest(),
                       'code': error['code'], 'type': kind, 'rule_id': error.get('rule_id'), 'positions': positions,
-                      'semgrep_version': policy['semgrep_version'], 'rules_sha256': policy['rules_sha256']}
+                      'rules_sha256': policy['rules_sha256']}
+        if policy.get('version', 1) == 2:
+            record.update(engine=policy['engine'], engine_version=policy['engine_version'])
+        else:
+            record['semgrep_version'] = policy['semgrep_version']
         return hashlib.sha256(json.dumps(record, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
     except (KeyError, TypeError, ValueError, OSError):
         return None
@@ -43,7 +47,9 @@ def apply_known_gaps(summary, payload, policy, root):
     if summary['status'] != 'partial' or not isinstance(payload, dict):
         return result
     errors = payload.get('errors')
-    if not isinstance(errors, list) or len(errors) != summary['errors']:
+    timeouts = summary.get('timeouts', 0)
+    if (not isinstance(errors, list) or type(timeouts) is not int or timeouts < 0
+            or len(errors) + timeouts != summary['errors']):
         return result
     accepted = Counter(policy['accepted_parser_errors'])
     for error in errors:
@@ -51,19 +57,30 @@ def apply_known_gaps(summary, payload, policy, root):
         if identity is not None and accepted[identity] > 0:
             result['known_errors'] += 1
             accepted[identity] -= 1
-    if errors and result['known_errors'] == len(errors) and type(summary['inputs']) is int and summary['inputs'] > 0:
+    if (errors and not timeouts and result['known_errors'] == len(errors)
+            and type(summary['inputs']) is int and summary['inputs'] > 0):
         result['status'] = 'partial_known'
     return result
 
 
-def validate_policy(data, pins):
-    semgrep = next(p['version'] for p in pins if p['tool'] == 'semgrep')
+def validate_policy(data, pins, engine='semgrep'):
+    if engine not in {'semgrep', 'opengrep'}:
+        raise ValueError('unsupported_engine')
+    selected = next((p for p in pins if p['tool'] == engine), None)
+    if selected is None:
+        raise ValueError('engine_pin')
     rules = next(p['sha256'] for p in pins if p['tool'] == 'semgrep-rules')
-    default = {'version': 1, 'semgrep_version': semgrep, 'rules_sha256': rules, 'accepted_parser_errors': []}
+    if engine == 'semgrep' and (data is None or isinstance(data, dict) and data.get('version') == 1):
+        default = {'version': 1, 'semgrep_version': selected['version'],
+                   'rules_sha256': rules, 'accepted_parser_errors': []}
+    else:
+        default = {'version': 2, 'engine': engine, 'engine_version': selected['version'],
+                   'rules_sha256': rules, 'accepted_parser_errors': []}
     if data is None:
         return default
-    if (not isinstance(data, dict) or set(data) != set(default) or type(data['version']) is not int
-            or data['version'] != 1 or data['semgrep_version'] != semgrep or data['rules_sha256'] != rules):
+    if (not isinstance(data, dict) or set(data) != set(default)
+            or type(data['version']) is not int
+            or any(data[key] != value for key, value in default.items() if key != 'accepted_parser_errors')):
         raise ValueError('baseline_binding')
     if not isinstance(data['accepted_parser_errors'], list) or len(data['accepted_parser_errors']) > 5000:
         raise ValueError('baseline_ids')
@@ -72,17 +89,17 @@ def validate_policy(data, pins):
     return data
 
 
-def load_policy(path, pins):
+def load_policy(path, pins, engine="semgrep"):
     if not path.exists():
-        return validate_policy(None, pins)
+        return validate_policy(None, pins, engine)
     if path.is_symlink() or path.stat().st_size > 1_000_000:
         raise ValueError('baseline_file')
-    return validate_policy(json.loads(path.read_text()), pins)
+    return validate_policy(json.loads(path.read_text()), pins, engine)
 
 
-def load_source_policy(root, base_sha, pins):
+def load_source_policy(root, base_sha, pins, engine="semgrep"):
     if not base_sha:
-        return load_policy(root / '.security-ci-baseline.json', pins)
+        return load_policy(root / '.security-ci-baseline.json', pins, engine)
     if not re.fullmatch('[0-9a-f]{40}', base_sha):
         raise ValueError('baseline_base_sha')
     def git(*args):
@@ -91,7 +108,7 @@ def load_source_policy(root, base_sha, pins):
     entries = git('ls-tree', '-z', base_sha, '--', '.security-ci-baseline.json').split(b'\0')
     entries = [entry for entry in entries if entry]
     if not entries:
-        return validate_policy(None, pins)
+        return validate_policy(None, pins, engine)
     if len(entries) != 1:
         raise ValueError('baseline_tree')
     prefix, name = entries[0].split(b'\t', 1)
@@ -105,4 +122,4 @@ def load_source_policy(root, base_sha, pins):
     payload = git('cat-file', 'blob', oid)
     if len(payload) != size:
         raise ValueError('baseline_size')
-    return validate_policy(json.loads(payload), pins)
+    return validate_policy(json.loads(payload), pins, engine)

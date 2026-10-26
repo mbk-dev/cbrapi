@@ -15,7 +15,7 @@ def summarize(tool, payload, code):  # noqa: C901 - One allowlisted dispatcher k
             count, errors, inputs = len(payload), 0, None
             if (code == 10) != bool(count):
                 return error
-        elif tool == 'semgrep':
+        elif tool in {'semgrep', 'opengrep'}:
             rows, failures, paths = payload['results'], payload['errors'], payload['paths']['scanned']
             if not all(isinstance(x, list) for x in (rows, failures, paths)):
                 return error
@@ -43,7 +43,7 @@ def summarize(tool, payload, code):  # noqa: C901 - One allowlisted dispatcher k
         return error
     status = 'partial' if errors else 'coverage_gap' if inputs == 0 else 'findings' if count else 'completed'
     result = {'status': status, 'findings': None if inputs == 0 else count, 'errors': errors, 'inputs': inputs}
-    if tool == 'semgrep':
+    if tool in {'semgrep', 'opengrep'}:
         result['timeouts'] = len(fixpoint_timeouts)
     return result
 
