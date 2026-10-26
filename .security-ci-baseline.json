@@ -1,0 +1,7 @@
+{
+  "version": 2,
+  "engine": "opengrep",
+  "engine_version": "1.32.0",
+  "rules_sha256": "098703252fbff4c04186e7b6dd06f9a6a03fb548778341056a945e099ec2a824",
+  "accepted_parser_errors": []
+}
