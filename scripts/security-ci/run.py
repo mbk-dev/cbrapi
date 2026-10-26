@@ -99,14 +99,16 @@ def audit():  # noqa: C901 - Keep the redacted failure boundary around the compl
     os.umask(0o077)
     root = Path.cwd()
     state = Path(tempfile.mkdtemp(prefix='security-audit-', dir=os.environ.get('RUNNER_TEMP')))
-    pins = json.loads((HERE / 'tools.json').read_text())
+    engine = os.environ.get('SECURITY_ENGINE', 'semgrep')
+    pins = [p for p in json.loads((HERE / 'tools.json').read_text())
+            if p['tool'] != 'opengrep' or engine == 'opengrep']
     result = {'version': 1, 'mode': 'advisory', 'scanners': {}, 'tools': [{k: p[k] for k in ('tool', 'version', 'sha256')} for p in pins],
                   'limitations': ['Source only; deployed images, host OS and live configuration are not checked.',
                                'No application installation. Unlocked, vendored and unsupported inputs require separate review.',
                                'Counts are candidates, not confirmed vulnerabilities. No automatic baseline suppression.']}
     failed = False
     try:
-        policy = load_source_policy(root, os.environ.get('SECURITY_BASE_SHA', ''), pins)
+        policy = load_source_policy(root, os.environ.get('SECURITY_BASE_SHA', ''), pins, engine)
         result['baseline'] = {'sha256': hashlib.sha256(json.dumps(policy, sort_keys=True).encode()).hexdigest(),
                                   'policy': 'reviewed_parser_gaps_only',
                                   'source': 'pull_request_base' if os.environ.get('SECURITY_BASE_SHA') else 'checkout'}
@@ -123,6 +125,10 @@ def audit():  # noqa: C901 - Keep the redacted failure boundary around the compl
                     binary = state / pin['tool']
                     binary.write_bytes(tar.extractfile(member).read())
                     binary.chmod(0o700)
+            elif pin['tool'] == 'opengrep':
+                binary = state / 'opengrep'
+                archive.replace(binary)
+                binary.chmod(0o700)
         venv = state / 'venv'
         env = {k: v for k, v in os.environ.items() if k in {'PATH', 'LANG', 'LC_ALL', 'RUNNER_TEMP', 'SSL_CERT_FILE', 'SSL_CERT_DIR'}}
         (state / 'home').mkdir()
@@ -153,11 +159,11 @@ def audit():  # noqa: C901 - Keep the redacted failure boundary around the compl
         jobs = {
             'gitleaks': [str(state / 'gitleaks'), 'git', str(root), '--config', str(config), '--log-opts=' + log_opts, '--ignore-gitleaks-allow', '--gitleaks-ignore-path', str(ignore), '--redact=100', '--exit-code=10', '--report-format=json', '--report-path', str(state / 'gitleaks.json')],
             'trivy': [str(state / 'trivy'), 'fs', '--config', str(trivy_config), '--ignorefile', str(ignore), '--scanners=vuln', '--include-dev-deps', '--list-all-pkgs', '--format=json', '--output', str(state / 'trivy.json'), '--skip-dirs=.git,node_modules,.venv,tmp', '--timeout=8m', str(root)],
-            'semgrep': [str(venv / 'bin/semgrep'), 'scan', '--config', str(rules), '--metrics=off', '--disable-version-check', '--disable-nosem', '--x-ignore-semgrepignore-files', '--timeout=20', '--jobs=2', '--max-memory=512', '--no-git-ignore', '--exclude=.git', '--exclude=node_modules', '--exclude=.venv', '--exclude=tmp', '--json', '--output', str(state / 'semgrep.json'), str(root)],
+            engine: [str(venv / 'bin/semgrep') if engine == 'semgrep' else str(state / 'opengrep'), 'scan', '--config', str(rules), *(['--metrics=off'] if engine == 'semgrep' else []), '--disable-version-check', '--disable-nosem', '--x-ignore-semgrepignore-files', '--timeout=20', '--jobs=2', '--max-memory=512', '--no-git-ignore', '--exclude=.git', '--exclude=node_modules', '--exclude=.venv', '--exclude=tmp', '--json', '--output', str(state / (engine + '.json')), str(root)],
         }
         for tool, args in jobs.items():
             execution = {}
-            wall_limit_seconds = 1800 if tool == 'semgrep' else 600
+            wall_limit_seconds = 1800 if tool in {'semgrep', 'opengrep'} else 600
             code = command(args, state / (tool + '.log'), timeout=wall_limit_seconds,
                            env=env, diagnostics=execution)
             execution['wall_limit_seconds'] = wall_limit_seconds
@@ -171,7 +177,7 @@ def audit():  # noqa: C901 - Keep the redacted failure boundary around the compl
             except OSError:
                 payload, report_state = None, 'unreadable'
             result['scanners'][tool] = summarize(tool, payload, code)
-            if tool == 'semgrep':
+            if tool in {'semgrep', 'opengrep'}:
                 result['scanners'][tool] = apply_known_gaps(result['scanners'][tool], payload, policy, root)
             result['scanners'][tool].update(execution=execution, report_state=report_state)
             failed |= result['scanners'][tool]['status'] in ('tool_error', 'partial')

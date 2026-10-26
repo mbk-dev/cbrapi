@@ -47,7 +47,7 @@ class AuditOutcomeTests(unittest.TestCase):
         cls.module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(cls.module)
 
-    def run_audit(self, change=None, bootstrap_error=False, process_observer=None):
+    def run_audit(self, change=None, bootstrap_error=False, process_observer=None, engine="semgrep"):
         import contextlib
         import io
         import json
@@ -60,6 +60,8 @@ class AuditOutcomeTests(unittest.TestCase):
             'trivy': ({'SchemaVersion': 2, 'Results': [{'Packages': [{'Name': 'sample'}], 'Vulnerabilities': []}]}, 0),
             'semgrep': ({'results': [], 'errors': [], 'paths': {'scanned': ['not-public-canary.py']}}, 0),
         }
+        if engine == "opengrep":
+            reports["opengrep"] = reports.pop("semgrep")
         if change:
             reports.update(change)
         with tempfile.TemporaryDirectory() as directory:
@@ -101,7 +103,7 @@ class AuditOutcomeTests(unittest.TestCase):
             output = io.StringIO()
             try:
                 os.chdir(workspace)
-                with mock.patch.dict(os.environ, {'RUNNER_TEMP': str(state), 'GITHUB_STEP_SUMMARY': str(step)}, clear=True), \
+                with mock.patch.dict(os.environ, {'RUNNER_TEMP': str(state), 'GITHUB_STEP_SUMMARY': str(step), 'SECURITY_ENGINE': engine}, clear=True), \
                      mock.patch.object(self.module, 'download', side_effect=download_fixture), \
                      mock.patch.object(self.module, 'command', side_effect=scanner_boundary), \
                      contextlib.redirect_stdout(output):
@@ -114,6 +116,35 @@ class AuditOutcomeTests(unittest.TestCase):
             self.assertNotIn('not-public-canary.py', published + step.read_text())
             self.assertIn(published.strip(), step.read_text())
             return code, json.loads(published)
+
+    def test_explicit_opengrep_runs_pinned_binary_with_private_reports(self):
+        commands = []
+        def observe(name, args, kwargs):
+            commands.append((name, args))
+        code, result = self.run_audit(engine='opengrep', process_observer=observe)
+        self.assertEqual(code, 0)
+        self.assertEqual(set(result['scanners']), {'gitleaks', 'trivy', 'opengrep'})
+        args = next(args for name, args in commands if name == 'opengrep')
+        self.assertIn('--x-ignore-semgrepignore-files', args)
+        self.assertIn('--disable-nosem', args)
+        self.assertIn('--timeout=20', args)
+        self.assertNotIn('--metrics=off', args)
+        self.assertTrue(any(pin['tool'] == 'opengrep' for pin in result['tools']))
+
+    def test_opengrep_timeout_fails_without_engine_fallback(self):
+        payload = {'results': [], 'errors': [], 'paths': {'scanned': ['not-public-canary.py']},
+                   'time': {'fixpoint_timeouts': [{'message': 'not-public-canary-text'}]}}
+        code, result = self.run_audit(engine='opengrep', change={'opengrep': (payload, 0)})
+        self.assertEqual(code, 1)
+        self.assertEqual(result['scanners']['opengrep']['timeouts'], 1)
+        self.assertEqual(result['scanners']['opengrep']['status'], 'partial')
+        self.assertNotIn('semgrep', result['scanners'])
+
+    def test_invalid_engine_fails_before_scanning(self):
+        code, result = self.run_audit(engine='unexpected')
+        self.assertEqual(code, 1)
+        self.assertEqual(result['bootstrap_status'], 'tool_error')
+        self.assertEqual(result['scanners'], {})
 
     def test_advisory_findings_keep_success_without_raw_evidence(self):
         code, result = self.run_audit({

@@ -5,6 +5,10 @@ inputs:
     description: Pull request base commit for trusted parser policy and commit range
     required: false
     default: ''
+  engine:
+    description: Static analysis engine, semgrep or opengrep; both use the same pinned rules
+    required: false
+    default: semgrep
 runs:
   using: composite
   steps:
@@ -20,4 +24,5 @@ runs:
       env:
         SECURITY_ACTION_DIR: ${{ github.action_path }}
         SECURITY_BASE_SHA: ${{ inputs.base-sha }}
+        SECURITY_ENGINE: ${{ inputs.engine }}
       run: python3 -E -s "$SECURITY_ACTION_DIR/../../../scripts/security-ci/run.py"

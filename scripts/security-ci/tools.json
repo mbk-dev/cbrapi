@@ -26,5 +26,12 @@
     "url": "https://codeload.github.com/semgrep/semgrep-rules/tar.gz/16b9e6d45f10649f6a531ec4838ed9924372c3bc",
     "sha256": "098703252fbff4c04186e7b6dd06f9a6a03fb548778341056a945e099ec2a824",
     "verification": "GitHub immutable commit archive; locally computed archive checksum"
+  },
+  {
+    "tool": "opengrep",
+    "version": "1.32.0",
+    "url": "https://github.com/opengrep/opengrep/releases/download/v1.32.0/opengrep_manylinux_x86",
+    "sha256": "7360d60174880bd9214f2dfbe439b7bce82b7a3d44cfe945ba833c85cc8bda75",
+    "verification": "matches official GitHub release asset digest"
   }
 ]
