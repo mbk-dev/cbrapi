@@ -163,7 +163,7 @@ def audit():  # noqa: C901 - Keep the redacted failure boundary around the compl
         }
         for tool, args in jobs.items():
             execution = {}
-            wall_limit_seconds = 1800 if tool in {'semgrep', 'opengrep'} else 600
+            wall_limit_seconds = 3600 if tool in {'semgrep', 'opengrep'} else 600
             code = command(args, state / (tool + '.log'), timeout=wall_limit_seconds,
                            env=env, diagnostics=execution)
             execution['wall_limit_seconds'] = wall_limit_seconds

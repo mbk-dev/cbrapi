@@ -270,10 +270,10 @@ class ScannerBudgetTests(unittest.TestCase):
             calls[name] = (args, kwargs.get('timeout', 600), Path.cwd())
         code, result = self.run_audit(process_observer=observe)
         self.assertEqual(code, 0)
-        self.assertEqual(calls['semgrep'][1], 1800)
+        self.assertEqual(calls['semgrep'][1], 3600)
         self.assertEqual(calls['gitleaks'][1], 600)
         self.assertEqual(calls['trivy'][1], 600)
-        self.assertEqual(result['scanners']['semgrep']['execution']['wall_limit_seconds'], 1800)
+        self.assertEqual(result['scanners']['semgrep']['execution']['wall_limit_seconds'], 3600)
         args = calls['semgrep'][0]
         self.assertEqual(Path(args[-1]), calls['semgrep'][2])
         self.assertIn('--timeout=20', args)
@@ -290,11 +290,12 @@ class ScannerBudgetTests(unittest.TestCase):
         self.assertIsNone(scanner['findings'])
         self.assertIsNone(scanner['inputs'])
         self.assertEqual(scanner['report_state'], 'missing')
-        self.assertEqual(scanner['execution']['wall_limit_seconds'], 1800)
+        self.assertEqual(scanner['execution']['wall_limit_seconds'], 3600)
 
     def test_shared_source_workflow_has_room_for_scanner_and_other_phases(self):
         import re
         workflow = Path(__file__).resolve().parents[2] / '.github/workflows/security-audit.yml'
         matches = re.findall(r'(?m)^    timeout-minutes: (\d+)\s*$', workflow.read_text())
         self.assertEqual(len(matches), 1)
-        self.assertGreaterEqual(int(matches[0]), 60)
+        # Every configured cap plus a 10-minute setup reserve must fit the job.
+        self.assertGreaterEqual(int(matches[0]) * 60, 3600 + 600 + 600 + 600)
