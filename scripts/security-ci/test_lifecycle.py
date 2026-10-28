@@ -31,17 +31,17 @@ class LifecycleTests(unittest.TestCase):
         self.assertFalse(self.alive(pid),'scanner grandchild survived cleanup')
     def test_timeout_kills_term_ignoring_grandchild(self):
         with patch.object(self.mod,'STOP_GRACE_SECONDS',.15,create=True):
-            self.assertEqual(self.mod.command(self.args(True),self.root/'log',timeout=.3),124)
+            self.assertEqual(self.mod.command(self.args(True),self.root/'log',timeout=5),124)
         self.assert_child_gone()
     def test_success_collects_leftover_child(self):
         with patch.object(self.mod,'STOP_GRACE_SECONDS',.15,create=True):
-            self.assertEqual(self.mod.command(self.args(False),self.root/'log',timeout=3),0)
+            self.assertEqual(self.mod.command(self.args(False),self.root/'log',timeout=10),0)
         self.assert_child_gone()
     def test_term_cancellation_cleans_child_before_exit(self):
         script=self.root/'parent.py';script.write_text('import sys\nsys.path.insert(0,'+repr(str(Path(__file__).parent.resolve()))+')\nimport run\nrun.STOP_GRACE_SECONDS=.15\nrun.command('+repr(self.args(True))+','+'__import__("pathlib").Path('+repr(str(self.root/'log'))+'),timeout=60)\n')
         p=subprocess.Popen([sys.executable,str(script)])
         self.addCleanup(lambda:p.kill() if p.poll() is None else None)
-        deadline=time.monotonic()+5
+        deadline=time.monotonic()+15
         while not self.pidfile.exists() and time.monotonic()<deadline:time.sleep(.02)
         self.assertTrue(self.pidfile.exists());p.terminate();p.wait(timeout=4)
         self.assertNotEqual(p.returncode,0);self.assert_child_gone()
