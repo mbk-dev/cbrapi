@@ -35,7 +35,8 @@ def main():
         for sig in previous:signal.signal(sig,signal.SIG_IGN)
         # This separate request survives cancellation of the blocking launch call;
         # the job-completed hook and host deadline also cover SIGKILL of this entry.
-        subprocess.run(command+['finish'],check=False,timeout=40)
+        if process is None or process.returncode != 73:
+            subprocess.run(command+['finish'],check=False,timeout=40)
         if process is not None:
             try:process.wait(timeout=5)
             except subprocess.TimeoutExpired:process.terminate()
