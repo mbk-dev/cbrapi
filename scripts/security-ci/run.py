@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import re
+import signal
 import subprocess
 import sys
 import tarfile
@@ -25,21 +26,65 @@ class HttpsRedirects(urllib.request.HTTPRedirectHandler):
         return super().redirect_request(request, response, code, message, headers, newurl)
 
 
+STOP_GRACE_SECONDS = 10
+
+
+def stop_process_group(process):
+    """Collect the scanner tree, including children left after a successful parent."""
+    def send(sig):
+        try:
+            os.killpg(process.pid, sig)
+            return True
+        except ProcessLookupError:
+            return False
+    if not send(signal.SIGTERM):
+        process.wait()
+        return
+    deadline = time.monotonic() + STOP_GRACE_SECONDS
+    while time.monotonic() < deadline:
+        process.poll()
+        if not send(0):
+            break
+        time.sleep(.05)
+    send(signal.SIGKILL)
+    process.wait()
+
+
 def command(args, log, timeout=600, env=None, diagnostics=None):
     started = time.monotonic()
     status, returncode = 'launch_error', None
-    with log.open('wb') as output:
+    process = None
+    previous = {}
+    def cancel(signum, frame):
+        raise SystemExit(128 + signum)
+    try:
+        for sig in (signal.SIGTERM, signal.SIGINT):
+            previous[sig] = signal.signal(sig, cancel)
+        with log.open('wb') as output:
+            process = subprocess.Popen(args, stdout=output, stderr=subprocess.STDOUT,
+                                       env=env, cwd=log.parent, start_new_session=True)
+            try:
+                returncode = process.wait(timeout=timeout)
+                status = 'exited'
+                return returncode
+            except subprocess.TimeoutExpired:
+                status = 'timeout'
+                return 124
+            except SystemExit:
+                status = 'cancelled'
+                raise
+    except OSError:
+        return 124
+    finally:
+        # A repeated cancellation must not interrupt the bounded tree cleanup.
+        for sig in previous:
+            signal.signal(sig, signal.SIG_IGN)
         try:
-            returncode = subprocess.run(args, stdout=output, stderr=subprocess.STDOUT,
-                                        timeout=timeout, env=env, cwd=log.parent, check=False).returncode
-            status = 'exited'
-            return returncode
-        except subprocess.TimeoutExpired:
-            status = 'timeout'
-            return 124
-        except OSError:
-            return 124
+            if process is not None:
+                stop_process_group(process)
         finally:
+            for sig, handler in previous.items():
+                signal.signal(sig, handler)
             if diagnostics is not None:
                 diagnostics.clear()
                 diagnostics.update(status=status, returncode=returncode,
@@ -159,7 +204,7 @@ def audit():  # noqa: C901 - Keep the redacted failure boundary around the compl
         jobs = {
             'gitleaks': [str(state / 'gitleaks'), 'git', str(root), '--config', str(config), '--log-opts=' + log_opts, '--ignore-gitleaks-allow', '--gitleaks-ignore-path', str(ignore), '--redact=100', '--exit-code=10', '--report-format=json', '--report-path', str(state / 'gitleaks.json')],
             'trivy': [str(state / 'trivy'), 'fs', '--config', str(trivy_config), '--ignorefile', str(ignore), '--scanners=vuln', '--include-dev-deps', '--list-all-pkgs', '--format=json', '--output', str(state / 'trivy.json'), '--skip-dirs=.git,node_modules,.venv,tmp', '--timeout=8m', str(root)],
-            engine: [str(venv / 'bin/semgrep') if engine == 'semgrep' else str(state / 'opengrep'), 'scan', '--config', str(rules), *(['--metrics=off'] if engine == 'semgrep' else []), '--disable-version-check', '--disable-nosem', '--x-ignore-semgrepignore-files', '--timeout=20', '--jobs=2', '--max-memory=512', '--no-git-ignore', '--exclude=.git', '--exclude=node_modules', '--exclude=.venv', '--exclude=tmp', '--json', '--output', str(state / (engine + '.json')), str(root)],
+            engine: [str(venv / 'bin/semgrep') if engine == 'semgrep' else str(state / 'opengrep'), 'scan', '--config', str(rules), *(['--metrics=off'] if engine == 'semgrep' else []), '--disable-version-check', '--disable-nosem', '--x-ignore-semgrepignore-files', '--timeout=20', '--jobs=1', '--max-memory=512', '--no-git-ignore', '--exclude=.git', '--exclude=node_modules', '--exclude=.venv', '--exclude=tmp', '--json', '--output', str(state / (engine + '.json')), str(root)],
         }
         for tool, args in jobs.items():
             execution = {}

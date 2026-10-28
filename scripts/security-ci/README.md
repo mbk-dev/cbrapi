@@ -23,3 +23,20 @@ Run contracts without loading the target repository:
 ```sh
 python3 -I -m unittest discover -s scripts/security-ci -p 'test_*.py'
 ```
+
+## Bounded scanner lifecycle
+
+`entry.py` uses a source-backed restricted launcher when installed on claw;
+otherwise it directly executes the audit on hosted/other runners. The claw
+boundary authenticates actual runner ancestry and runs the entire audit as the
+runner UID in a separate cgroup, not as root. Ceiling:2GiB RAM/256MiB swap,
+45min runtime,10s stop grace; admission can lower RAM to preserve host/CI reserve
+or visibly refuse when insufficient. Only one claw audit is admitted at a time.
+The composite action always requests cleanup; a host job-completed hook and
+independent systemd deadline cover death of the step wrapper. Cancelled,
+OOM-killed, timed-out or refused scans do not count as completed coverage.
+
+Each subprocess also gets a separate process group. On normal exit, timeout,
+SIGTERM or SIGINT the wrapper sends TERM then KILL to remaining descendants
+before discarding private scratch. Scanner concurrency starts at one worker.
+`--max-memory=512` is an engine operation bound, not a total process-tree cap.

@@ -277,7 +277,7 @@ class ScannerBudgetTests(unittest.TestCase):
         args = calls['semgrep'][0]
         self.assertEqual(Path(args[-1]), calls['semgrep'][2])
         self.assertIn('--timeout=20', args)
-        self.assertIn('--jobs=2', args)
+        self.assertIn('--jobs=1', args)
         self.assertIn('--max-memory=512', args)
         self.assertEqual([a for a in args if a.startswith('--exclude=')],
                          ['--exclude=.git', '--exclude=node_modules', '--exclude=.venv', '--exclude=tmp'])
