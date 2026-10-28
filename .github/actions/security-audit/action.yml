@@ -25,4 +25,10 @@ runs:
         SECURITY_ACTION_DIR: ${{ github.action_path }}
         SECURITY_BASE_SHA: ${{ inputs.base-sha }}
         SECURITY_ENGINE: ${{ inputs.engine }}
-      run: python3 -E -s "$SECURITY_ACTION_DIR/../../../scripts/security-ci/run.py"
+      run: python3 -E -s "$SECURITY_ACTION_DIR/../../../scripts/security-ci/entry.py"
+    - name: Collect remaining source audit processes
+      if: always()
+      shell: bash
+      run: python3 -E -s "$SECURITY_ACTION_DIR/../../../scripts/security-ci/entry.py" --finish
+      env:
+        SECURITY_ACTION_DIR: ${{ github.action_path }}

@@ -36,4 +36,4 @@ jobs:
         env:
           SECURITY_ENGINE: opengrep
           SECURITY_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
-        run: python3 -E -s scripts/security-ci/run.py
+        run: python3 -E -s scripts/security-ci/entry.py
