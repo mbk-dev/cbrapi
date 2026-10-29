@@ -76,7 +76,7 @@ callers into stages. The default `all` entry keeps the legacy request shape.
 The launcher supplies its remaining service budget as `SECURITY_RUNTIME_SECONDS`.
 Downloads and subprocesses share this deadline and reserve 20 seconds for report
 publication and descendant cleanup. Without the host budget, existing hosted
-limits remain unchanged. SAST-only runs with zero scanned inputs fail explicitly.
+limits remain unchanged. SAST runs with zero scanned inputs fail explicitly, including the default `all` stage.
 On claw, the entry relays only bounded allowlisted checkpoints from the owned
 runner summary. Launcher exit zero without a finished valid scanner report, or
 with a timed-out/failed execution, is an error; raw finding text is never relayed.

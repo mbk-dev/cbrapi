@@ -368,6 +368,11 @@ class ScannerBudgetTests(unittest.TestCase):
         self.assertLessEqual(calls['semgrep'], 2680)
         self.assertEqual(result['scanners']['semgrep']['execution']['wall_limit_seconds'], calls['semgrep'])
 
+    def test_default_all_with_zero_sast_inputs_is_an_error(self):
+        code, result = self.run_audit({'semgrep': ({'results': [], 'errors': [], 'paths': {'scanned': []}}, 0)})
+        self.assertEqual(code, 1)
+        self.assertEqual(result['scanners']['semgrep']['status'], 'coverage_gap')
+
     def test_selected_sast_with_zero_inputs_is_an_error(self):
         code, result = self.run_audit({'semgrep': ({'results': [], 'errors': [], 'paths': {'scanned': []}}, 0)}, stage='sast')
         self.assertEqual(code, 1)

@@ -78,6 +78,7 @@ class ClawCheckpointTransportTests(unittest.TestCase):
         for field, value in (
             ("status", "partial"),
             ("status", "tool_error"),
+            ("status", "coverage_gap"),
             ("report_state", "missing"),
             ("execution", None),
             ("execution", {"status": "timeout", "returncode": None, "duration_ms": 1}),

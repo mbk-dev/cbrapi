@@ -281,7 +281,7 @@ def audit():  # noqa: C901 - Keep the redacted failure boundary around the compl
                 result['scanners'][tool] = apply_known_gaps(result['scanners'][tool], payload, policy, root)
             result['scanners'][tool].update(execution=execution, report_state=report_state)
             failed |= result['scanners'][tool]['status'] in ('tool_error', 'partial')
-            failed |= stage == 'sast' and result['scanners'][tool]['status'] == 'coverage_gap'
+            failed |= tool in {'semgrep', 'opengrep'} and result['scanners'][tool]['status'] == 'coverage_gap'
             checkpoint(result, tool, 'finished')
     except SystemExit as error:
         failed = True

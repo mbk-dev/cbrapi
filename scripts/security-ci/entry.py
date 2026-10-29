@@ -59,7 +59,13 @@ def forward_checkpoints(stage, engine):
         and row["phase"] in expected
         and set(row["scanners"]) == expected
         and all(
-            scanner.get("report_state") == "json"
+            (
+                name not in {"semgrep", "opengrep"}
+                or scanner["status"] != "coverage_gap"
+                and type(scanner["inputs"]) is int
+                and scanner["inputs"] > 0
+            )
+            and scanner.get("report_state") == "json"
             and scanner["status"] not in {"tool_error", "partial"}
             and scanner.get("execution", {}).get("status") == "exited"
             and scanner["execution"].get("returncode") in ({0, 10} if name == "gitleaks" else {0})
