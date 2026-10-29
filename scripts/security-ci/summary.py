@@ -4,6 +4,59 @@ from pathlib import Path
 import sys
 
 
+def checkpoint_integer(value, nullable=False, signed=False):
+    if value is None:
+        return nullable
+    return type(value) is int and (-2_147_483_648 if signed else 0) <= value <= 2_147_483_647
+
+
+def checkpoint_execution(value):
+    if not isinstance(value, dict):
+        return False
+    required = {'status', 'returncode', 'duration_ms'}
+    if not required <= set(value) or not set(value) <= required | {'wall_limit_seconds'}:
+        return False
+    if value['status'] not in ('exited', 'timeout', 'cancelled', 'launch_error'):
+        return False
+    return (checkpoint_integer(value['returncode'], nullable=True, signed=True)
+            and checkpoint_integer(value['duration_ms'])
+            and ('wall_limit_seconds' not in value or checkpoint_integer(value['wall_limit_seconds'])))
+
+
+def checkpoint_scanner(value):
+    if not isinstance(value, dict):
+        return False
+    required = {'status', 'findings', 'errors', 'inputs'}
+    if not required <= set(value) or not set(value) <= required | {
+            'timeouts', 'known_errors', 'execution', 'report_state'}:
+        return False
+    if value['status'] not in ('tool_error', 'partial', 'partial_known', 'coverage_gap', 'findings', 'completed'):
+        return False
+    counters = [checkpoint_integer(value[key], nullable=key in {'inputs', 'findings'})
+                for key in ('findings', 'errors', 'inputs')]
+    counters += [checkpoint_integer(value[key]) for key in ('timeouts', 'known_errors') if key in value]
+    return (all(counters)
+            and ('execution' not in value or checkpoint_execution(value['execution']))
+            and ('report_state' not in value or value['report_state'] in (
+                'json', 'missing', 'invalid_json', 'unreadable', 'unverified_after_cancel')))
+
+
+def safe_checkpoint(value):
+    """Validate progress before copying it from a job summary into public logs."""
+    if not isinstance(value, dict) or set(value) != {'version', 'phase', 'state', 'scanners'}:
+        return False
+    if type(value['version']) is not int or value['version'] != 1:
+        return False
+    if value['phase'] not in ('bootstrap', 'gitleaks', 'trivy', 'semgrep', 'opengrep'):
+        return False
+    if value['state'] not in ('started', 'finished', 'cancelled'):
+        return False
+    scanners = value['scanners']
+    return (isinstance(scanners, dict)
+            and set(scanners) <= {'gitleaks', 'trivy', 'semgrep', 'opengrep'}
+            and all(checkpoint_scanner(row) for row in scanners.values()))
+
+
 def summarize(tool, payload, code):  # noqa: C901 - One allowlisted dispatcher keeps scanner schemas separate and never copies raw fields.
     error = {'status': 'tool_error', 'findings': None, 'errors': 1, 'inputs': None}
     if type(code) is not int or code not in ({0, 10} if tool == 'gitleaks' else {0}):
