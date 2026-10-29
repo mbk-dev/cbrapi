@@ -9,6 +9,10 @@ inputs:
     description: Static analysis engine, semgrep or opengrep; both use the same pinned rules
     required: false
     default: semgrep
+  stage:
+    description: 'Independent audit stage: all, sast, secrets, or dependencies'
+    required: false
+    default: all
 runs:
   using: composite
   steps:
@@ -25,6 +29,7 @@ runs:
         SECURITY_ACTION_DIR: ${{ github.action_path }}
         SECURITY_BASE_SHA: ${{ inputs.base-sha }}
         SECURITY_ENGINE: ${{ inputs.engine }}
+        SECURITY_STAGE: ${{ inputs.stage }}
       run: python3 -E -s "$SECURITY_ACTION_DIR/../../../scripts/security-ci/entry.py"
     - name: Collect remaining source audit processes
       if: always()

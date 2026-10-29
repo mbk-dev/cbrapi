@@ -40,3 +40,43 @@ Each subprocess also gets a separate process group. On normal exit, timeout,
 SIGTERM or SIGINT the wrapper sends TERM then KILL to remaining descendants
 before discarding private scratch. Scanner concurrency starts at one worker.
 `--max-memory=512` is an engine operation bound, not a total process-tree cap.
+
+## Partial-run observations
+
+The runner emits allowlisted one-line `Security audit checkpoint: ` JSON records
+before and after each scanner, also appending them to the GitHub step summary.
+These records preserve completed-stage aggregates if a later stage is cancelled
+or killed. A `started` record is not evidence of completed coverage. Consumers
+must not treat a checkpoint as the final audit result or infer success from a
+missing later report. Raw paths, findings and scanner messages are never copied.
+
+A handled cancellation retains earlier observations, marks the interrupted
+scanner as `tool_error` with `execution.status=cancelled`, and returns the
+nonzero signal status. SIGKILL can prevent a final record; earlier flushed
+checkpoints still describe only the stages already observed.
+
+## Independent stages
+
+The optional `stage` input is `all` by default, preserving existing callers.
+Use `sast` for the selected Semgrep/OpenGrep engine, `secrets` for Gitleaks,
+or `dependencies` for Trivy. A stage downloads only its required tools;
+non-SAST stages do not install the rule environment or consume parser policies.
+
+On claw, independent stages must be separate GitHub jobs, not multiple action
+invocations inside one Worker: each Worker identity owns one bounded audit.
+Use a non-fail-fast matrix so one scanner failure does not cancel the others,
+and keep an aggregate gate that requires every stage to succeed. Stage splitting
+does not convert missing, cancelled, timed-out or partial analysis to success.
+
+The claw launcher accepts an optional strictly enumerated stage field while
+retaining legacy five-field requests. This never lets callers change the command,
+UID or resource/deadline caps. Deploy that compatible host helper before opting
+callers into stages. The default `all` entry keeps the legacy request shape.
+
+The launcher supplies its remaining service budget as `SECURITY_RUNTIME_SECONDS`.
+Downloads and subprocesses share this deadline and reserve 20 seconds for report
+publication and descendant cleanup. Without the host budget, existing hosted
+limits remain unchanged. SAST-only runs with zero scanned inputs fail explicitly.
+On claw, the entry relays only bounded allowlisted checkpoints from the owned
+runner summary. Launcher exit zero without a finished valid scanner report, or
+with a timed-out/failed execution, is an error; raw finding text is never relayed.
