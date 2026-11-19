@@ -121,14 +121,27 @@ The original rule archive, target/nosem/ignore settings, per-rule20-second
 deadline, single worker, and native lifecycle/resource limits are unchanged.
 OpenGrep gets a1024MiB internal heap ceiling; Semgrep retains512MiB.
 
-For OpenGrep only, rule `dangerous-subprocess-use-tainted-env-args` disables
-`symbolic_propagation`. Literal propagation can otherwise exclude an aliased
-shell command from its generic sink without matching its shell-specific sink.
-This conservative setting also restores some false-positive candidates for
-literal executable aliases; findings remain candidates for review. Rule IDs,
-sources, sinks, other options and all other rules stay unchanged. Packing rejects
-a missing/duplicate pinned rule or unexpected upstream option drift. Default
-Semgrep packing preserves the original rule content.
+For OpenGrep only, rule `dangerous-subprocess-use-tainted-env-args` relaxes two
+generic-sink exclusions for literal interpreter heads in lists and tuples.
+Heads without the rule's interpreter-name fragments keep their exclusions. A
+fragment can occur anywhere in a literal, including a directory or `shasum`, so
+added findings need review. All original sink branches, sources, sanitizers and
+options remain: symbolic propagation is needed
+to detect source aliases such as `get = os.getenv`. Disabling it globally is not
+a valid repair for shell-command aliases.
+
+Only the two exclusion strings change, so the repair expands eligible sinks
+without disabling existing source detection. Interpreter-argument findings are
+still candidates for review. Sink mappings are copied so YAML aliases cannot
+change another rule. Packing rejects a missing/duplicate pinned rule, unexpected
+options, sink structure or exclusion drift. Default Semgrep packing preserves
+the original rule content.
+
+The static `fixtures/opengrep-alias.py` contract contains four dangerous cases
+and three safe data-argument cases. Engine qualification runs it with OpenGrep's
+test runner against the single packed rule, as well as the original upstream
+fixture. These are static inputs; never execute their example functions. The
+controller unittest suite checks packing and transport, not backend matching.
 
 This release includes the precise Python raw-string/ReDoS correction
 [OpenGrep901](https://github.com/opengrep/opengrep/pull/901). Its internal

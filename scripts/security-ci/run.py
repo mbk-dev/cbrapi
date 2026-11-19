@@ -1,4 +1,5 @@
 """Pinned, advisory source audit. Raw reports stay in a private temporary directory."""
+import copy
 import hashlib
 import json
 import os
@@ -123,6 +124,25 @@ def download(pin, destination, deadline=None):
 
 
 OPENGREP_ALIAS_RULE_ID = '7a5f349ed5a408cd-0-0-dangerous-subprocess-use-tainted-env-args'
+OPENGREP_NON_INTERPRETER_LITERAL = '=~/(?s)^(?!.*(?:sh|bash|ksh|csh|tcsh|zsh|python)).*$/'
+
+
+def interpreter_alias_sinks(rule):
+    sinks = copy.deepcopy(rule.get('pattern-sinks'))
+    try:
+        patterns = sinks[0]['patterns'][0]['pattern-either'][0]['patterns']
+    except (KeyError, IndexError, TypeError) as error:
+        raise ValueError('opengrep_alias_sink_shape') from error
+    if not isinstance(patterns, list) or not all(isinstance(part, dict) for part in patterns):
+        raise ValueError('opengrep_alias_sink_shape')
+    expected = {'subprocess.$FUNC(["...",...], ...)', 'subprocess.$FUNC(("...",...), ...)'}
+    observed = [part.get('pattern-not') for part in patterns if part.get('pattern-not') in expected]
+    if len(observed) != 2 or set(observed) != expected:
+        raise ValueError('opengrep_alias_sink_binding')
+    for part in patterns:
+        if part.get('pattern-not') in expected:
+            part['pattern-not'] = part['pattern-not'].replace('"..."', f'"{OPENGREP_NON_INTERPRETER_LITERAL}"')
+    return {**rule, 'pattern-sinks': sinks}
 
 
 def configure_engine_rules(rules, engine):
@@ -135,9 +155,10 @@ def configure_engine_rules(rules, engine):
         options = selected[0].get('options')
         if not isinstance(options, dict) or options.get('symbolic_propagation') is not True:
             raise ValueError('opengrep_alias_rule_options')
-        # Keep aliased shell sinks visible; literal propagation otherwise excludes
-        # them from the generic sink before the shell-specific branch can match.
-        selected[0]['options'] = {**options, 'symbolic_propagation': False}
+        # Preserve source-alias propagation. Relax only literal interpreter-head
+        # exclusions so the generic sink also covers aliased interpreter commands.
+        updated = interpreter_alias_sinks(selected[0])
+        return [updated if rule is selected[0] else rule for rule in rules]
     return rules
 
 

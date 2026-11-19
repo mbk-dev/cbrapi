@@ -15,18 +15,17 @@ security76 coordination and all existing operation grants/holds.
   complete exact-source qualification before any acceptance/cutover claim.
 
 Consumer qualification also exposed an alias regression in the upstream
-environment-to-subprocess rule. Its symbolic literal propagation excludes an
-aliased shell command from the generic sink without matching the shell-specific
-sink. The conservative repair disables that option for this exact rule only
-when packing OpenGrep rules; Semgrep and all other rule content stay unchanged.
-This restores some false-positive candidates as well as the missed shell sink.
+environment-to-subprocess rule. Symbolic propagation excludes an aliased shell
+command from the generic sink without matching the shell-specific sink. An
+option-only repair is superseded: disabling propagation also misses aliases of
+sources such as `os.getenv`. Preserve all options and sources; relax only the
+two generic-sink literal-head exclusions for interpreters. Keep Semgrep unchanged.
 
 - [x] Reproduce the alias omission with a static scanner fixture and failing
   engine-selection/compatibility tests in `scripts/security-ci/test_engines.py`
   and `test_run.py`; never execute the fixture.
-- [x] Pass the explicit selected engine into `run.py --pack`; change only the
-  pinned subprocess rule's `symbolic_propagation` option for OpenGrep. Reject
-  unexpected upstream option drift and unknown engines.
+- [x] Pass the explicit selected engine into `run.py --pack` and reject unknown
+  engines and upstream binding/option drift.
 - [x] Verify the original upstream scanner fixture and the two positive alias
   cases, the full controller suite, Ruff, and an independent diff review.
 - [ ] Complete actual consumer CI; retain errors as failures and keep runtime
@@ -42,6 +41,17 @@ malformed-value rejection, and that partial execution still fails.
 Qualify an OpenGrep-only1024MiB heap ceiling with one worker and the existing
 20-second per-rule timeout; keep Semgrep at512MiB and preserve the host's native
 memory/deadline guards. Component qualification does not replace consumer CI.
+
+Follow-up source-alias qualification:
+
+- [x] Reproduce the option-only source-alias omission; extend the static fixture
+  with a source alias, tuple interpreter alias and three safe executable aliases.
+- [x] Preserve symbolic propagation and copy/relax only two interpreter sink
+  exclusions; reject missing, duplicate and malformed exclusion bindings.
+- [x] Verify both independent negative controls, all four dangerous and three
+  safe cases, upstream fixtures, default packing,91 contracts and Ruff.
+- [ ] Obtain an independent review of the monotonic sink change, deliver the
+  corrected action revision, then require genuine complete consumer CI.
 
 Only trusted security tooling runs; application files/hooks/dependencies are
 never executed. Raw reports and runtime receipts stay outside Git.

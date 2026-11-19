@@ -93,7 +93,17 @@ class EngineRuleCompatibilityTests(unittest.TestCase):
     def rule(self):
         return {'id': '7a5f349ed5a408cd-0-0-dangerous-subprocess-use-tainted-env-args',
                 'options': {'symbolic_propagation': True},
-                'mode': 'taint', 'pattern-sources': [{'pattern': 'os.environ'}]}
+                'mode': 'taint', 'pattern-sources': [{'pattern': 'os.environ'}],
+                'pattern-sinks': [{'patterns': [{'pattern-either': [{'patterns': [
+                    {'pattern-not': 'subprocess.$FUNC("...", ...)'},
+                    {'pattern-not': 'subprocess.$FUNC(["...",...], ...)'},
+                    {'pattern-not': 'subprocess.$FUNC(("...",...), ...)'},
+                    {'pattern': 'subprocess.$FUNC($CMD, ...)'},
+                ]}]}]}]}
+
+    @staticmethod
+    def sink_patterns(rule):
+        return rule['pattern-sinks'][0]['patterns'][0]['pattern-either'][0]['patterns']
 
     def configure_many(self, rules, engine):
         try:
@@ -107,7 +117,10 @@ class EngineRuleCompatibilityTests(unittest.TestCase):
     def test_opengrep_keeps_aliased_shell_sinks_conservative(self):
         rule = self.rule()
         expected = self.rule()
-        expected['options']['symbolic_propagation'] = False
+        literal = '=~/(?s)^(?!.*(?:sh|bash|ksh|csh|tcsh|zsh|python)).*$/'
+        for index in (1, 2):
+            part = self.sink_patterns(expected)[index]
+            part['pattern-not'] = part['pattern-not'].replace('"..."', f'"{literal}"')
         self.assertEqual(self.configure(rule, 'opengrep'), expected)
 
     def test_semgrep_rule_content_is_unchanged(self):
@@ -122,8 +135,28 @@ class EngineRuleCompatibilityTests(unittest.TestCase):
         selected = self.rule()
         other = dict(self.rule(), id='another-rule', options=selected['options'])
         result = self.configure_many([selected, other], 'opengrep')
-        self.assertFalse(result[0]['options']['symbolic_propagation'])
+        self.assertTrue(result[0]['options']['symbolic_propagation'])
         self.assertTrue(result[1]['options']['symbolic_propagation'])
+
+    def test_shared_sink_mappings_do_not_modify_another_rule(self):
+        selected = self.rule()
+        other = {**self.rule(), 'id': 'another-rule', 'pattern-sinks': selected['pattern-sinks']}
+        result = self.configure_many([selected, other], 'opengrep')
+        self.assertNotEqual(result[0]['pattern-sinks'], self.rule()['pattern-sinks'])
+        self.assertEqual(result[1]['pattern-sinks'], self.rule()['pattern-sinks'])
+
+    def test_interpreter_exclusion_drift_is_rejected(self):
+        for malformed in ('missing', 'duplicate', 'shape'):
+            with self.subTest(malformed=malformed):
+                rule = self.rule()
+                if malformed == 'missing':
+                    self.sink_patterns(rule).pop(1)
+                elif malformed == 'duplicate':
+                    self.sink_patterns(rule).append(dict(self.sink_patterns(rule)[1]))
+                else:
+                    rule['pattern-sinks'] = []
+                with self.assertRaises(ValueError):
+                    self.configure(rule, 'opengrep')
 
     def test_missing_or_duplicate_upstream_rule_is_rejected(self):
         for rules in ([], [self.rule(), self.rule()]):
