@@ -35,7 +35,13 @@ def checkpoint_scanner(value):
     counters = [checkpoint_integer(value[key], nullable=key in {'inputs', 'findings'})
                 for key in ('findings', 'errors', 'inputs')]
     counters += [checkpoint_integer(value[key]) for key in ('timeouts', 'ordinary_timeouts', 'memory_errors', 'known_errors') if key in value]
+    categories = [value[key] for key in ('ordinary_timeouts', 'memory_errors') if key in value]
     return (all(counters)
+            and all(count > 0 for count in categories)
+            and (not categories or value['status'] == 'partial'
+                 and sum(categories) + value.get('timeouts', 0) <= value['errors'])
+            and (value['status'] not in {'completed', 'findings'}
+                 or not (value['errors'] or value.get('timeouts', 0) or value.get('known_errors', 0)))
             and ('execution' not in value or checkpoint_execution(value['execution']))
             and ('report_state' not in value or value['report_state'] in (
                 'json', 'missing', 'invalid_json', 'unreadable', 'unverified_after_cancel')))

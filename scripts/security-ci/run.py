@@ -137,7 +137,7 @@ def configure_engine_rules(rules, engine):
             raise ValueError('opengrep_alias_rule_options')
         # Keep aliased shell sinks visible; literal propagation otherwise excludes
         # them from the generic sink before the shell-specific branch can match.
-        options['symbolic_propagation'] = False
+        selected[0]['options'] = {**options, 'symbolic_propagation': False}
     return rules
 
 

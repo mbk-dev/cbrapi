@@ -116,7 +116,7 @@ class ClawCheckpointTransportTests(unittest.TestCase):
 
     def test_error_category_counters_reject_untrusted_values(self):
         for counter in ('ordinary_timeouts', 'memory_errors'):
-            for value in (True, -1, 'private-source-canary'):
+            for value in (0, True, -1, 'private-source-canary'):
                 with self.subTest(counter=counter, value=value):
                     record = self.record()
                     record['scanners']['semgrep'][counter] = value
@@ -124,6 +124,51 @@ class ClawCheckpointTransportTests(unittest.TestCase):
                     self.assertNotEqual(status, 0)
                     self.assertEqual(output, '')
                     self.assertNotIn('private-source-canary', errors)
+
+    def test_error_categories_cannot_accompany_a_success_claim(self):
+        for counter in ('ordinary_timeouts', 'memory_errors'):
+            for claimed in ('completed', 'findings', 'partial_known'):
+                for errors in (0, 1):
+                    with self.subTest(counter=counter, claimed=claimed, errors=errors):
+                        record = self.record()
+                        scanner = record['scanners']['semgrep']
+                        scanner.update(status=claimed, errors=errors)
+                        scanner[counter] = 1
+                        if claimed == 'partial_known':
+                            scanner['known_errors'] = errors
+                        status, output, _ = self.invoke([record])
+                        self.assertNotEqual(status, 0)
+                        self.assertEqual(output, '')
+
+    def test_error_categories_cannot_exceed_the_partial_error_total(self):
+        for values in (
+            {'errors': 1, 'memory_errors': 2},
+            {'errors': 2, 'memory_errors': 1, 'ordinary_timeouts': 1, 'timeouts': 1},
+        ):
+            with self.subTest(values=values):
+                record = self.record()
+                record['scanners']['semgrep'].update(status='partial', **values)
+                status, output, _ = self.invoke([record])
+                self.assertNotEqual(status, 0)
+                self.assertEqual(output, '')
+
+    def test_legacy_clean_claims_reject_nonzero_error_observations(self):
+        for claimed in ('completed', 'findings'):
+            for field in ('errors', 'timeouts', 'known_errors'):
+                with self.subTest(claimed=claimed, field=field):
+                    record = self.record()
+                    record['scanners']['semgrep']['status'] = claimed
+                    record['scanners']['semgrep'][field] = 1
+                    status, output, _ = self.invoke([record])
+                    self.assertNotEqual(status, 0)
+                    self.assertEqual(output, '')
+
+    def test_reviewed_parser_gaps_retain_legacy_transport(self):
+        record = self.record()
+        record['scanners']['semgrep'].update(status='partial_known', errors=1, known_errors=1)
+        status, output, _ = self.invoke([record])
+        self.assertEqual(status, 0)
+        self.assertIn('Security audit checkpoint: ', output)
 
 
 if __name__ == "__main__":

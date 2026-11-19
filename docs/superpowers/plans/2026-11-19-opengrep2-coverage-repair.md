@@ -21,13 +21,13 @@ sink. The conservative repair disables that option for this exact rule only
 when packing OpenGrep rules; Semgrep and all other rule content stay unchanged.
 This restores some false-positive candidates as well as the missed shell sink.
 
-- [ ] Reproduce the alias omission with a static scanner fixture and failing
+- [x] Reproduce the alias omission with a static scanner fixture and failing
   engine-selection/compatibility tests in `scripts/security-ci/test_engines.py`
   and `test_run.py`; never execute the fixture.
-- [ ] Pass the explicit selected engine into `run.py --pack`; change only the
+- [x] Pass the explicit selected engine into `run.py --pack`; change only the
   pinned subprocess rule's `symbolic_propagation` option for OpenGrep. Reject
   unexpected upstream option drift and unknown engines.
-- [ ] Verify the original upstream scanner fixture and the two positive alias
+- [x] Verify the original upstream scanner fixture and the two positive alias
   cases, the full controller suite, Ruff, and an independent diff review.
 - [ ] Complete actual consumer CI; retain errors as failures and keep runtime
   evidence outside Git. Any heap-limit change first needs separate qualification.

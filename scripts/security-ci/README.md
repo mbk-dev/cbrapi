@@ -56,6 +56,9 @@ The legacy `timeouts` field counts fixpoint timeouts. Positive optional
 engine memory-error types separately. They contain integers only; unknown errors
 still count toward `errors`, and partial reports still fail. An absent counter
 does not establish completed coverage when the report itself is missing.
+When present, category counters must be positive, fit within a partial row's
+error total, and cannot accompany a success claim. Legacy clean rows also reject
+nonzero error observations; reviewed parser gaps keep their existing transport.
 
 A handled cancellation retains earlier observations, marks the interrupted
 scanner as `tool_error` with `execution.status=cancelled`, and returns the

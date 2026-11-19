@@ -118,6 +118,13 @@ class EngineRuleCompatibilityTests(unittest.TestCase):
         result = self.configure_many([self.rule(), rule], 'opengrep')
         self.assertEqual(result[1], dict(self.rule(), id='another-rule'))
 
+    def test_shared_upstream_options_do_not_modify_another_rule(self):
+        selected = self.rule()
+        other = dict(self.rule(), id='another-rule', options=selected['options'])
+        result = self.configure_many([selected, other], 'opengrep')
+        self.assertFalse(result[0]['options']['symbolic_propagation'])
+        self.assertTrue(result[1]['options']['symbolic_propagation'])
+
     def test_missing_or_duplicate_upstream_rule_is_rejected(self):
         for rules in ([], [self.rule(), self.rule()]):
             with self.subTest(rules=rules), self.assertRaises(ValueError):
