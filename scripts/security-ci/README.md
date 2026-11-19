@@ -80,3 +80,24 @@ limits remain unchanged. SAST runs with zero scanned inputs fail explicitly, inc
 On claw, the entry relays only bounded allowlisted checkpoints from the owned
 runner summary. Launcher exit zero without a finished valid scanner report, or
 with a timed-out/failed execution, is an error; raw finding text is never relayed.
+
+## Engine version migration
+
+The self-audit workflow explicitly selects OpenGrep. Its former checked-in
+1.32.0 policy had an empty parser-error list and exactly matched the default
+engine/version/rules binding generated from the reviewed tool pins. Removing
+that redundant empty file preserves the same policy record and digest; it does
+not accept any parser errors or transfer an older engine's exceptions.
+
+Upgrade in two reviewed changes: first remove the empty policy while retaining
+the1.32.0 tool pin, then base the new engine-pin PR on the actual default-branch
+commit containing that removal. PRs read the base policy; deleting the file and
+changing the pin in one PR would still be rejected against an older base. A
+consumer with its own tracked version-bound policy needs the same explicit
+base-policy coordination before adopting a new action pin.
+
+The generated policy binds the engine, version and immutable rules. Individual
+reviewed parser-error identities bind source bytes and positions; this empty
+policy contains none and does not prove exact-source coverage. Unaccepted parser
+errors, rule/fixpoint timeouts, missing reports and zero targets retain their
+existing failure behavior.

@@ -23,6 +23,19 @@ class EnginePolicyTests(unittest.TestCase):
         self.path.write_text(json.dumps(self.policy))
         self.error = {'code': 3, 'type': 'PartialParsing', 'path': 'source.py'}
 
+    def test_self_audit_policy_accepts_the_real_opengrep_pin(self):
+        # The checked-in workflow selects OpenGrep, outside the synthetic fixtures.
+        here = Path(__file__).resolve().parent
+        pins = json.loads((here / 'tools.json').read_text())
+        try:
+            policy = baseline.load_policy(here.parent.parent / '.security-ci-baseline.json',
+                                          pins, engine='opengrep')
+        except ValueError as error:
+            self.fail(f'Self-audit rejects its pinned OpenGrep engine: {error}')
+        self.assertEqual(policy['engine'], 'opengrep')
+        self.assertEqual(policy['engine_version'], next(p['version'] for p in pins if p['tool'] == 'opengrep'))
+        self.assertEqual(policy['accepted_parser_errors'], [])
+
     def test_opengrep_policy_is_bound_to_explicit_selected_engine(self):
         self.assertEqual(baseline.load_policy(self.path, self.pins, engine='opengrep'), self.policy)
         with self.assertRaises(ValueError):
