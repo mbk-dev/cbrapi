@@ -5,6 +5,7 @@ import tempfile
 import unittest
 
 import baseline
+import run as runner
 import summary
 
 
@@ -86,6 +87,58 @@ class EnginePolicyTests(unittest.TestCase):
     def test_unknown_engine_is_rejected(self):
         with self.assertRaises(ValueError):
             baseline.load_policy(self.path, self.pins, engine='other')
+
+
+class EngineRuleCompatibilityTests(unittest.TestCase):
+    def rule(self):
+        return {'id': '7a5f349ed5a408cd-0-0-dangerous-subprocess-use-tainted-env-args',
+                'options': {'symbolic_propagation': True},
+                'mode': 'taint', 'pattern-sources': [{'pattern': 'os.environ'}]}
+
+    def configure_many(self, rules, engine):
+        try:
+            return runner.configure_engine_rules(rules, engine)
+        except AttributeError as error:
+            self.fail(f'Explicit engine rule compatibility is unavailable: {error}')
+
+    def configure(self, rule, engine):
+        return self.configure_many([rule], engine)[0]
+
+    def test_opengrep_keeps_aliased_shell_sinks_conservative(self):
+        rule = self.rule()
+        expected = self.rule()
+        expected['options']['symbolic_propagation'] = False
+        self.assertEqual(self.configure(rule, 'opengrep'), expected)
+
+    def test_semgrep_rule_content_is_unchanged(self):
+        self.assertEqual(self.configure(self.rule(), 'semgrep'), self.rule())
+
+    def test_other_opengrep_rules_are_unchanged(self):
+        rule = dict(self.rule(), id='another-rule')
+        result = self.configure_many([self.rule(), rule], 'opengrep')
+        self.assertEqual(result[1], dict(self.rule(), id='another-rule'))
+
+    def test_shared_upstream_options_do_not_modify_another_rule(self):
+        selected = self.rule()
+        other = dict(self.rule(), id='another-rule', options=selected['options'])
+        result = self.configure_many([selected, other], 'opengrep')
+        self.assertFalse(result[0]['options']['symbolic_propagation'])
+        self.assertTrue(result[1]['options']['symbolic_propagation'])
+
+    def test_missing_or_duplicate_upstream_rule_is_rejected(self):
+        for rules in ([], [self.rule(), self.rule()]):
+            with self.subTest(rules=rules), self.assertRaises(ValueError):
+                self.configure_many(rules, 'opengrep')
+
+    def test_unexpected_upstream_option_drift_is_rejected(self):
+        rule = self.rule()
+        rule['options']['symbolic_propagation'] = False
+        with self.assertRaises(ValueError):
+            self.configure(rule, 'opengrep')
+
+    def test_unknown_engine_is_rejected(self):
+        with self.assertRaises(ValueError):
+            self.configure(self.rule(), 'another-engine')
 
 
 if __name__ == '__main__':

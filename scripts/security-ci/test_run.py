@@ -116,6 +116,24 @@ class AuditOutcomeTests(unittest.TestCase):
             self.assertIn(final.strip(), step.read_text())
             return code, result
 
+    def test_rule_packer_receives_the_explicit_selected_engine(self):
+        for engine in ('semgrep', 'opengrep'):
+            with self.subTest(engine=engine):
+                self.run_audit(engine=engine, stage='sast')
+                commands = [args for args in self.last_all_commands if '--pack' in args]
+                self.assertEqual(len(commands), 1)
+                self.assertEqual(commands[0][-1], engine)
+
+    def test_opengrep_heap_ceiling_does_not_raise_workers_or_rule_timeouts(self):
+        for engine, memory in (('semgrep', 512), ('opengrep', 1024)):
+            with self.subTest(engine=engine):
+                self.run_audit(engine=engine, stage='sast')
+                commands = [args for args in self.last_all_commands if Path(args[0]).name == engine]
+                self.assertEqual(len(commands), 1)
+                self.assertIn(f'--max-memory={memory}', commands[0])
+                self.assertIn('--jobs=1', commands[0])
+                self.assertIn('--timeout=20', commands[0])
+
     def test_independent_stages_run_only_the_selected_scanner(self):
         for stage, tool in [('sast', 'semgrep'), ('secrets', 'gitleaks'), ('dependencies', 'trivy')]:
             with self.subTest(stage=stage):
