@@ -123,8 +123,10 @@ OpenGrep gets a1024MiB internal heap ceiling; Semgrep retains512MiB.
 
 For OpenGrep only, rule `dangerous-subprocess-use-tainted-env-args` relaxes two
 generic-sink exclusions for literal interpreter heads in lists and tuples.
-Non-interpreter literal executables keep their exclusions. All original sink
-branches, sources, sanitizers and options remain: symbolic propagation is needed
+Heads without the rule's interpreter-name fragments keep their exclusions. A
+fragment can occur anywhere in a literal, including a directory or `shasum`, so
+added findings need review. All original sink branches, sources, sanitizers and
+options remain: symbolic propagation is needed
 to detect source aliases such as `get = os.getenv`. Disabling it globally is not
 a valid repair for shell-command aliases.
 
