@@ -10,7 +10,7 @@ Legacy version 1 parser policies remain valid for Semgrep. Version 2 policies bi
 {
   "version": 2,
   "engine": "opengrep",
-  "engine_version": "1.32.0",
+  "engine_version": "2.0.0",
   "rules_sha256": "<verified rules archive SHA256>",
   "accepted_parser_errors": []
 }
@@ -101,3 +101,24 @@ reviewed parser-error identities bind source bytes and positions; this empty
 policy contains none and does not prove exact-source coverage. Unaccepted parser
 errors, rule/fixpoint timeouts, missing reports and zero targets retain their
 existing failure behavior.
+
+## Qualified opt-in OpenGrep 2
+
+The opt-in binary is OpenGrep2.0.0, verified against the immutable official
+release asset digest. Semgrep remains the default. Callers explicitly select
+`engine: opengrep` and a reviewed action commit; no automatic fallback occurs.
+The original rule archive, target/nosem/ignore settings, per-rule20-second and
+512MiB limits, and native lifecycle/resource limits are unchanged.
+
+This release includes the precise Python raw-string/ReDoS correction
+[OpenGrep901](https://github.com/opengrep/opengrep/pull/901). Its internal
+taint fixpoint timeout has been removed; ordinary rule and native deadlines
+still apply. Unaccepted parser errors, all reported rule/fixpoint timeouts,
+missing reports and zero-target results keep their fail-closed behavior.
+No older parser acceptance is transferred.
+
+Qualification uses the upstream raw-string/numeric-escape/overflow regressions,
+positive/negative findings, adversarial ignore/nosem controls, and exact target
+and finding-occurrence comparison on affected original inputs. Reduced-input
+checks are supplementary: each adopting consumer also needs complete source
+validation bound to its actual source revision and the selected engine/rules.

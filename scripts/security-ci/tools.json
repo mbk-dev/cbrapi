@@ -29,9 +29,9 @@
   },
   {
     "tool": "opengrep",
-    "version": "1.32.0",
-    "url": "https://github.com/opengrep/opengrep/releases/download/v1.32.0/opengrep_manylinux_x86",
-    "sha256": "7360d60174880bd9214f2dfbe439b7bce82b7a3d44cfe945ba833c85cc8bda75",
+    "version": "2.0.0",
+    "url": "https://github.com/opengrep/opengrep/releases/download/v2.0.0/opengrep_linux_x86",
+    "sha256": "37e93f4da5fd04a18c5c1febbdd12f7e98dfccd4d0c9cf2593bcb25eeb462da0",
     "verification": "matches official GitHub release asset digest"
   }
 ]

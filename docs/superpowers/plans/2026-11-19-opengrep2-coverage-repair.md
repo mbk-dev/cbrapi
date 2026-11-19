@@ -6,7 +6,7 @@ security76 coordination and all existing operation grants/holds.
 - [x] Qualify the digest-pinned new engine against original affected literals,
   upstream regressions, ignore/nosem controls and exact target/finding identity.
 - [x] Reproduce the real self-audit policy/pin mismatch with an integration test.
-- [ ] First publish the empty-policy preparation with the existing1.32.0 pin.
+- [x] First publish the empty-policy preparation with the existing1.32.0 pin.
   Prove generated checkout policy equals the removed file, and existing PR-base
   policy still validates. Preserve fail-closed parser handling.
 - [ ] Base the separate2.0.0 pin change on the delivered preparation, obtain
