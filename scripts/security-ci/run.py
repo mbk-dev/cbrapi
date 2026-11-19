@@ -122,7 +122,26 @@ def download(pin, destination, deadline=None):
         raise ValueError('tool_digest_mismatch')
 
 
-def pack_rules(archive, output):
+OPENGREP_ALIAS_RULE_ID = '7a5f349ed5a408cd-0-0-dangerous-subprocess-use-tainted-env-args'
+
+
+def configure_engine_rules(rules, engine):
+    if engine not in {'semgrep', 'opengrep'}:
+        raise ValueError('unsupported_engine')
+    if engine == 'opengrep':
+        selected = [rule for rule in rules if rule.get('id') == OPENGREP_ALIAS_RULE_ID]
+        if len(selected) != 1:
+            raise ValueError('opengrep_alias_rule_binding')
+        options = selected[0].get('options')
+        if not isinstance(options, dict) or options.get('symbolic_propagation') is not True:
+            raise ValueError('opengrep_alias_rule_options')
+        # Keep aliased shell sinks visible; literal propagation otherwise excludes
+        # them from the generic sink before the shell-specific branch can match.
+        options['symbolic_propagation'] = False
+    return rules
+
+
+def pack_rules(archive, output, engine='semgrep'):
     from ruamel.yaml import YAML
     yaml = YAML(typ='safe')
     rules = []
@@ -146,6 +165,7 @@ def pack_rules(archive, output):
                     rules.append(rule)
     if not rules:
         raise ValueError('empty_rules')
+    rules = configure_engine_rules(rules, engine)
     with output.open('w') as stream:
         yaml.dump({'rules': rules}, stream)
 
@@ -229,7 +249,7 @@ def audit():  # noqa: C901 - Keep the redacted failure boundary around the compl
             wheel = next(state.glob('semgrep-*.whl'))
             if command([python, '-m', 'pip', '--isolated', 'install', '--disable-pip-version-check', '--index-url', 'https://pypi.org/simple', '-c', str(HERE / 'constraints.txt'), str(wheel)], state / 'pip.log', timeout=execution_budget(deadline, 600), env=env):
                 raise ValueError('scanner_install_failed')
-            if command([python, str(HERE / 'run.py'), '--pack', str(state / 'semgrep-rules.tar.gz'), str(rules)], state / 'rules.log', timeout=execution_budget(deadline, 600), env=env):
+            if command([python, str(HERE / 'run.py'), '--pack', str(state / 'semgrep-rules.tar.gz'), str(rules), engine], state / 'rules.log', timeout=execution_budget(deadline, 600), env=env):
                 raise ValueError('rules_failed')
         config = state / 'gitleaks.toml'
         config.write_text('[extend]\nuseDefault = true\n')
@@ -248,7 +268,7 @@ def audit():  # noqa: C901 - Keep the redacted failure boundary around the compl
         jobs = {
             'gitleaks': [str(state / 'gitleaks'), 'git', str(root), '--config', str(config), '--log-opts=' + log_opts, '--ignore-gitleaks-allow', '--gitleaks-ignore-path', str(ignore), '--redact=100', '--exit-code=10', '--report-format=json', '--report-path', str(state / 'gitleaks.json')],
             'trivy': [str(state / 'trivy'), 'fs', '--config', str(trivy_config), '--ignorefile', str(ignore), '--scanners=vuln', '--include-dev-deps', '--list-all-pkgs', '--format=json', '--output', str(state / 'trivy.json'), '--skip-dirs=.git,node_modules,.venv,tmp', '--timeout=8m', str(root)],
-            engine: [str(venv / 'bin/semgrep') if engine == 'semgrep' else str(state / 'opengrep'), 'scan', '--config', str(rules), *(['--metrics=off'] if engine == 'semgrep' else []), '--disable-version-check', '--disable-nosem', '--x-ignore-semgrepignore-files', '--timeout=20', '--jobs=1', '--max-memory=512', '--no-git-ignore', '--exclude=.git', '--exclude=node_modules', '--exclude=.venv', '--exclude=tmp', '--json', '--output', str(state / (engine + '.json')), str(root)],
+            engine: [str(venv / 'bin/semgrep') if engine == 'semgrep' else str(state / 'opengrep'), 'scan', '--config', str(rules), *(['--metrics=off'] if engine == 'semgrep' else []), '--disable-version-check', '--disable-nosem', '--x-ignore-semgrepignore-files', '--timeout=20', '--jobs=1', f'--max-memory={1024 if engine == "opengrep" else 512}', '--no-git-ignore', '--exclude=.git', '--exclude=node_modules', '--exclude=.venv', '--exclude=tmp', '--json', '--output', str(state / (engine + '.json')), str(root)],
         }
         jobs = {name: args for name, args in jobs.items() if name in selected}
         checkpoint(result, 'bootstrap', 'finished')
@@ -302,7 +322,7 @@ def audit():  # noqa: C901 - Keep the redacted failure boundary around the compl
 
 
 if __name__ == '__main__':
-    if len(sys.argv) == 4 and sys.argv[1] == '--pack':
-        pack_rules(Path(sys.argv[2]), Path(sys.argv[3]))
+    if len(sys.argv) in (4, 5) and sys.argv[1] == '--pack':
+        pack_rules(Path(sys.argv[2]), Path(sys.argv[3]), sys.argv[4] if len(sys.argv) == 5 else 'semgrep')
     else:
         sys.exit(audit())

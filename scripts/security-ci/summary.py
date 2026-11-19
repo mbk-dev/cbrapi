@@ -28,13 +28,13 @@ def checkpoint_scanner(value):
         return False
     required = {'status', 'findings', 'errors', 'inputs'}
     if not required <= set(value) or not set(value) <= required | {
-            'timeouts', 'known_errors', 'execution', 'report_state'}:
+            'timeouts', 'ordinary_timeouts', 'memory_errors', 'known_errors', 'execution', 'report_state'}:
         return False
     if value['status'] not in ('tool_error', 'partial', 'partial_known', 'coverage_gap', 'findings', 'completed'):
         return False
     counters = [checkpoint_integer(value[key], nullable=key in {'inputs', 'findings'})
                 for key in ('findings', 'errors', 'inputs')]
-    counters += [checkpoint_integer(value[key]) for key in ('timeouts', 'known_errors') if key in value]
+    counters += [checkpoint_integer(value[key]) for key in ('timeouts', 'ordinary_timeouts', 'memory_errors', 'known_errors') if key in value]
     return (all(counters)
             and ('execution' not in value or checkpoint_execution(value['execution']))
             and ('report_state' not in value or value['report_state'] in (
@@ -57,6 +57,15 @@ def safe_checkpoint(value):
             and all(checkpoint_scanner(row) for row in scanners.values()))
 
 
+def scanner_error_kind(error):
+    if not isinstance(error, dict):
+        return None
+    kind = error.get('type')
+    if isinstance(kind, list) and kind:
+        kind = kind[0]
+    return kind if isinstance(kind, str) else None
+
+
 def summarize(tool, payload, code):  # noqa: C901 - One allowlisted dispatcher keeps scanner schemas separate and never copies raw fields.
     error = {'status': 'tool_error', 'findings': None, 'errors': 1, 'inputs': None}
     if type(code) is not int or code not in ({0, 10} if tool == 'gitleaks' else {0}):
@@ -76,6 +85,7 @@ def summarize(tool, payload, code):  # noqa: C901 - One allowlisted dispatcher k
             if not isinstance(fixpoint_timeouts, list):
                 return error
             count, errors, inputs = len(rows), len(failures) + len(fixpoint_timeouts), len(paths)
+            error_kinds = [scanner_error_kind(error) for error in failures]
         elif tool == 'trivy':
             if payload['SchemaVersion'] != 2:
                 return error
@@ -98,6 +108,11 @@ def summarize(tool, payload, code):  # noqa: C901 - One allowlisted dispatcher k
     result = {'status': status, 'findings': None if inputs == 0 else count, 'errors': errors, 'inputs': inputs}
     if tool in {'semgrep', 'opengrep'}:
         result['timeouts'] = len(fixpoint_timeouts)
+        for field, kinds in (('ordinary_timeouts', ('Timeout',)),
+                             ('memory_errors', ('Out of memory', 'OutOfMemory'))):
+            count = sum(kind in kinds for kind in error_kinds)
+            if count:
+                result[field] = count
     return result
 
 

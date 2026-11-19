@@ -105,6 +105,26 @@ class ClawCheckpointTransportTests(unittest.TestCase):
         self.assertNotEqual(status, 0)
         self.assertEqual(output, "")
 
+    def test_safe_error_categories_survive_without_turning_failure_into_success(self):
+        record = self.record()
+        record['scanners']['semgrep'].update(status='partial', errors=3, ordinary_timeouts=1, memory_errors=2)
+        status, output, _ = self.invoke([record])
+        self.assertNotEqual(status, 0)
+        self.assertIn('Security audit checkpoint: ', output)
+        result = json.loads(output.split(': ', 1)[1])['scanners']['semgrep']
+        self.assertEqual((result['ordinary_timeouts'], result['memory_errors']), (1, 2))
+
+    def test_error_category_counters_reject_untrusted_values(self):
+        for counter in ('ordinary_timeouts', 'memory_errors'):
+            for value in (True, -1, 'private-source-canary'):
+                with self.subTest(counter=counter, value=value):
+                    record = self.record()
+                    record['scanners']['semgrep'][counter] = value
+                    status, output, errors = self.invoke([record])
+                    self.assertNotEqual(status, 0)
+                    self.assertEqual(output, '')
+                    self.assertNotIn('private-source-canary', errors)
+
 
 if __name__ == "__main__":
     unittest.main()

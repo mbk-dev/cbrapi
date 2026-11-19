@@ -63,6 +63,32 @@ class SummaryTests(unittest.TestCase):
                            'time': {'fixpoint_timeouts': invalid}}
                 self.assertEqual(self.module.summarize('semgrep', payload, 0)['status'], 'tool_error')
 
+    def test_ordinary_timeouts_have_a_separate_safe_counter(self):
+        for tool in ('semgrep', 'opengrep'):
+            with self.subTest(tool=tool):
+                payload = {'results': [], 'errors': [{'type': 'Timeout', 'message': 'DO_NOT_DISCLOSE'}],
+                           'paths': {'scanned': ['private.py']}}
+                result = self.module.summarize(tool, payload, 0)
+                self.assertEqual(result['status'], 'partial')
+                self.assertEqual(result['errors'], 1)
+                self.assertEqual(result['timeouts'], 0)
+                self.assertEqual(result.get('ordinary_timeouts'), 1)
+                self.assertNotIn('DO_NOT_DISCLOSE', str(result))
+                self.assertNotIn('private.py', str(result))
+
+    def test_memory_error_variants_are_counted_without_raw_fields(self):
+        payload = {'results': [], 'errors': [
+            {'type': 'Out of memory', 'message': 'DO_NOT_DISCLOSE'},
+            {'type': ['OutOfMemory', {'path': 'private.py'}]},
+            {'type': {'untrusted': 'DO_NOT_DISCLOSE'}},
+        ], 'paths': {'scanned': ['private.py']}}
+        result = self.module.summarize('opengrep', payload, 0)
+        self.assertEqual(result['status'], 'partial')
+        self.assertEqual(result['errors'], 3)
+        self.assertEqual(result.get('memory_errors'), 2)
+        self.assertNotIn('DO_NOT_DISCLOSE', str(result))
+        self.assertNotIn('private.py', str(result))
+
 
 if __name__ == '__main__':
     unittest.main()

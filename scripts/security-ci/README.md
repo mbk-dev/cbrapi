@@ -1,6 +1,6 @@
 # Pinned source audit
 
-The composite action defaults to Semgrep. Callers may explicitly set `engine: opengrep` to use the pinned standalone OpenGrep binary with the same immutable upstream rules. No automatic engine fallback occurs. Gitleaks and Trivy, private raw reports, safe aggregate output, wall limits, and fail-closed timeout handling are unchanged.
+The composite action defaults to Semgrep. Callers may explicitly set `engine: opengrep` to use the pinned standalone OpenGrep binary and immutable upstream rule archive, with the explicit compatibility setting below. No automatic engine fallback occurs. Gitleaks and Trivy, private raw reports, safe aggregate output, wall limits, and fail-closed timeout handling are unchanged.
 
 Both engines disable inline suppression and project Semgrep ignore files. The Semgrep wheel remains a pinned bootstrap dependency for packing upstream YAML rules in the private environment; it is not the selected scan engine when `engine: opengrep` is set. Application dependencies and application code are never loaded.
 
@@ -39,7 +39,8 @@ OOM-killed, timed-out or refused scans do not count as completed coverage.
 Each subprocess also gets a separate process group. On normal exit, timeout,
 SIGTERM or SIGINT the wrapper sends TERM then KILL to remaining descendants
 before discarding private scratch. Scanner concurrency starts at one worker.
-`--max-memory=512` is an engine operation bound, not a total process-tree cap.
+The engine heap ceiling is512MiB for Semgrep and1024MiB for OpenGrep. This is
+an engine operation bound, not a total process-tree cap; native caps still apply.
 
 ## Partial-run observations
 
@@ -49,6 +50,12 @@ These records preserve completed-stage aggregates if a later stage is cancelled
 or killed. A `started` record is not evidence of completed coverage. Consumers
 must not treat a checkpoint as the final audit result or infer success from a
 missing later report. Raw paths, findings and scanner messages are never copied.
+
+The legacy `timeouts` field counts fixpoint timeouts. Positive optional
+`ordinary_timeouts` and `memory_errors` fields count known top-level timeout and
+engine memory-error types separately. They contain integers only; unknown errors
+still count toward `errors`, and partial reports still fail. An absent counter
+does not establish completed coverage when the report itself is missing.
 
 A handled cancellation retains earlier observations, marks the interrupted
 scanner as `tool_error` with `execution.status=cancelled`, and returns the
@@ -107,8 +114,18 @@ existing failure behavior.
 The opt-in binary is OpenGrep2.0.0, verified against the immutable official
 release asset digest. Semgrep remains the default. Callers explicitly select
 `engine: opengrep` and a reviewed action commit; no automatic fallback occurs.
-The original rule archive, target/nosem/ignore settings, per-rule20-second and
-512MiB limits, and native lifecycle/resource limits are unchanged.
+The original rule archive, target/nosem/ignore settings, per-rule20-second
+deadline, single worker, and native lifecycle/resource limits are unchanged.
+OpenGrep gets a1024MiB internal heap ceiling; Semgrep retains512MiB.
+
+For OpenGrep only, rule `dangerous-subprocess-use-tainted-env-args` disables
+`symbolic_propagation`. Literal propagation can otherwise exclude an aliased
+shell command from its generic sink without matching its shell-specific sink.
+This conservative setting also restores some false-positive candidates for
+literal executable aliases; findings remain candidates for review. Rule IDs,
+sources, sinks, other options and all other rules stay unchanged. Packing rejects
+a missing/duplicate pinned rule or unexpected upstream option drift. Default
+Semgrep packing preserves the original rule content.
 
 This release includes the precise Python raw-string/ReDoS correction
 [OpenGrep901](https://github.com/opengrep/opengrep/pull/901). Its internal
