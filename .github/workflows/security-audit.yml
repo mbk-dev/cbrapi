@@ -35,5 +35,6 @@ jobs:
       - name: Scan source without installing application dependencies
         env:
           SECURITY_ENGINE: opengrep
+          SECURITY_STAGE: ${{ (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') && 'all' || 'secrets' }}
           SECURITY_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
         run: python3 -E -s scripts/security-ci/entry.py
