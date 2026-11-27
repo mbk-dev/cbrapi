@@ -42,7 +42,7 @@ baseline and keep the job PARTIAL/failing. The contract has 29 unit tests.
 The composite action at .github/actions/security-audit executes this reviewed
 package against the caller workspace. Callers pin its full commit SHA and pass
 the pull-request base SHA. Its code stays outside the scanned workspace, and
-no caller application dependencies or credentials are needed. Tool/rule archive
+no caller application dependencies or production credentials are needed. Tool/rule archive
 digests remain verified by the runner. Changing the action pin requires review.
 The source in this canonical repository continues to audit itself directly.
 
@@ -54,6 +54,29 @@ A real adversarial-module regression test proves the failure before the fix.
 The action directory depth is part of the reviewed metadata contract.
 
 The orchestration tests call audit() through controlled download/process boundaries and real report parsing, baseline, JSON output and exit aggregation. Removing failure aggregation makes nine assertions fail; advisory findings retain exit zero. No scanner/bootstrap runtime code changed in this test-only revision.
+
+### Incremental push secret scans
+
+Callers may opt in only for a push `secrets` stage by passing both
+`push-bootstrap-run` (a positive run ID of a successful full-history audit)
+and `push-token` (a GitHub token with `actions: read`). The caller checks out
+full history at the pushed SHA and names the outer action step exactly
+`Run Gitleaks push range`. The workflow must be
+`.github/workflows/security-audit.yml`, and its audit job must be named `audit`.
+The resolver checks recent successful push runs and their latest-attempt job
+and step results. Cancelled, skipped, foreign, and non-ancestor incremental
+runs cannot advance the base. If none qualifies, it validates the explicitly pinned
+full-history run and uses its SHA, or the unique merge base with the current
+checkout when it lies on a diverged branch. Missing or ambiguous evidence fails
+the job. The token is passed only to the resolver, not the scanner. Omit both
+inputs to retain the existing behavior. Periodic and manual full-history audits
+remain independently configured by callers. Range scans include merge diffs
+against the first parent and report `secret_scope: commit_range`.
+
+A legacy full-history bootstrap establishes coverage under the scanner options
+used by that run. Its default Git log omits merge patches. Include those older
+patches in a separate historical backfill to extend merge coverage before the
+bootstrap SHA.
 
 ### Execution diagnostics
 
