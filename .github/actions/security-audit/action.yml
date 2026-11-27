@@ -5,6 +5,14 @@ inputs:
     description: Pull request base commit for trusted parser policy and commit range
     required: false
     default: ''
+  push-bootstrap-run:
+    description: Pinned successful full-history audit run for push coverage bootstrap
+    required: false
+    default: ''
+  push-token:
+    description: GitHub token with actions read access, used only by the push resolver
+    required: false
+    default: ''
   engine:
     description: Static analysis engine, semgrep or opengrep; both use the same pinned rules
     required: false
@@ -22,12 +30,24 @@ runs:
       env:
         SECURITY_ACTION_DIR: ${{ github.action_path }}
       run: python3 -I -m unittest discover -s "$SECURITY_ACTION_DIR/../../../scripts/security-ci" -p 'test_*.py'
+    - name: Resolve verified push coverage
+      if: inputs.push-bootstrap-run != '' || inputs.push-token != ''
+      id: push-base
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        SECURITY_ACTION_DIR: ${{ github.action_path }}
+        SECURITY_PUSH_BOOTSTRAP: ${{ inputs.push-bootstrap-run }}
+        SECURITY_PUSH_TOKEN: ${{ inputs.push-token }}
+        SECURITY_STAGE: ${{ inputs.stage }}
+        SECURITY_BASE_SHA: ${{ inputs.base-sha }}
+      run: python3 -I "$SECURITY_ACTION_DIR/../../../scripts/security-ci/push_base.py"
     - name: Scan source without installing application dependencies
       shell: bash
       working-directory: ${{ github.workspace }}
       env:
         SECURITY_ACTION_DIR: ${{ github.action_path }}
-        SECURITY_BASE_SHA: ${{ inputs.base-sha }}
+        SECURITY_BASE_SHA: ${{ steps.push-base.outputs.base_sha || inputs.base-sha }}
         SECURITY_ENGINE: ${{ inputs.engine }}
         SECURITY_STAGE: ${{ inputs.stage }}
       run: python3 -E -s "$SECURITY_ACTION_DIR/../../../scripts/security-ci/entry.py"

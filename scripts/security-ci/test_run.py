@@ -47,7 +47,7 @@ class AuditOutcomeTests(unittest.TestCase):
         cls.module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(cls.module)
 
-    def run_audit(self, change=None, bootstrap_error=False, process_observer=None, engine="semgrep", interruption_tool=None, stage="all", runtime_seconds=None):
+    def run_audit(self, change=None, bootstrap_error=False, process_observer=None, engine="semgrep", interruption_tool=None, stage="all", runtime_seconds=None, base_sha=""):
         import contextlib
         import io
         import json
@@ -99,6 +99,7 @@ class AuditOutcomeTests(unittest.TestCase):
             output = io.StringIO()
             audit_env = {'RUNNER_TEMP': str(state), 'GITHUB_STEP_SUMMARY': str(step), 'SECURITY_ENGINE': engine, 'SECURITY_STAGE': stage}
             audit_env['SECURITY_RUNTIME_SECONDS'] = '' if runtime_seconds is None else str(runtime_seconds)
+            audit_env['SECURITY_BASE_SHA'] = base_sha
             try:
                 os.chdir(workspace)
                 with mock.patch.dict(os.environ, audit_env, clear=True), \
@@ -115,6 +116,13 @@ class AuditOutcomeTests(unittest.TestCase):
             self.last_checkpoints, final, result = AuditOutcomeTests.decode_output(published)
             self.assertIn(final.strip(), step.read_text())
             return code, result
+
+    def test_commit_range_includes_first_parent_merge_diffs(self):
+        code, result = self.run_audit(stage='secrets', base_sha='a' * 40)
+        self.assertEqual(code, 0)
+        self.assertEqual(result['secret_scope'], 'commit_range')
+        args = next(args for args in self.last_all_commands if Path(args[0]).name == 'gitleaks')
+        self.assertIn('--log-opts=' + 'a' * 40 + '..HEAD --diff-merges=first-parent', args)
 
     def test_rule_packer_receives_the_explicit_selected_engine(self):
         for engine in ('semgrep', 'opengrep'):

@@ -283,9 +283,9 @@ def audit():  # noqa: C901 - Keep the redacted failure boundary around the compl
         if scope:
             if not re.fullmatch(r'[0-9a-f]{40}', scope):
                 raise ValueError('invalid_base_sha')
-            log_opts = scope + '..HEAD'
+            log_opts = scope + '..HEAD --diff-merges=first-parent'
         if 'gitleaks' in selected:
-            result['secret_scope'] = 'pr_commits' if scope else 'all_history'
+            result['secret_scope'] = 'commit_range' if scope else 'all_history'
         jobs = {
             'gitleaks': [str(state / 'gitleaks'), 'git', str(root), '--config', str(config), '--log-opts=' + log_opts, '--ignore-gitleaks-allow', '--gitleaks-ignore-path', str(ignore), '--redact=100', '--exit-code=10', '--report-format=json', '--report-path', str(state / 'gitleaks.json')],
             'trivy': [str(state / 'trivy'), 'fs', '--config', str(trivy_config), '--ignorefile', str(ignore), '--scanners=vuln', '--include-dev-deps', '--list-all-pkgs', '--format=json', '--output', str(state / 'trivy.json'), '--skip-dirs=.git,node_modules,.venv,tmp', '--timeout=8m', str(root)],
